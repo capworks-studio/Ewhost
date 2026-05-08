@@ -2,1885 +2,1471 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EwHost — Hosting Your Programs</title>
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EwHost — Script Hosting</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Unbounded:wght@400;600;700;900&display=swap" rel="stylesheet">
 <script src="https://js.stripe.com/v3/"></script>
 <style>
-/* ═══════════════════════════════════════════════
-   RESET & VARIABLES
-═══════════════════════════════════════════════ */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:      #080808;
+  --bg1:     #0E0E0E;
+  --bg2:     #141414;
+  --bg3:     #1C1C1C;
+  --bg4:     #242424;
+  --border:  #2A2A2A;
+  --border2: #383838;
+  --green:   #00FF88;
+  --green2:  #00CC6A;
+  --green-d: #003D20;
+  --red:     #FF3B3B;
+  --red-d:   #3D0000;
+  --amber:   #FFB800;
+  --amber-d: #3D2C00;
+  --blue:    #3B82F6;
+  --text:    #F0F0F0;
+  --text2:   #888;
+  --text3:   #444;
+  --mono:    'IBM Plex Mono',monospace;
+  --display: 'Unbounded',sans-serif;
+  --r:       6px;
+  --r2:      10px;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--mono);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;cursor:default}
 
-:root {
-  --bg:       #080810;
-  --bg1:      #0D0D1A;
-  --bg2:      #12121F;
-  --bg3:      #1A1A2E;
-  --card:     rgba(255,255,255,0.04);
-  --card-h:   rgba(255,255,255,0.07);
-  --border:   rgba(255,255,255,0.08);
-  --border-h: rgba(124,58,237,0.5);
-  --violet:   #7C3AED;
-  --violet-l: #9D6FFF;
-  --violet-d: #4C1D95;
-  --cyan:     #06B6D4;
-  --cyan-l:   #67E8F9;
-  --green:    #10B981;
-  --red:      #EF4444;
-  --amber:    #F59E0B;
-  --text:     #E8E8F8;
-  --text-mid: #8888AA;
-  --text-dim: #44445A;
-  --mono:     'JetBrains Mono', monospace;
-  --sans:     'Syne', sans-serif;
-  --r:        12px;
-  --r-lg:     20px;
-  --shadow:   0 8px 32px rgba(0,0,0,0.5);
-  --glow-v:   0 0 40px rgba(124,58,237,0.25);
-  --glow-c:   0 0 40px rgba(6,182,212,0.2);
-}
+/* Scanline effect */
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:9999}
 
-html { scroll-behavior: smooth; }
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:var(--green)}
 
-body {
-  font-family: var(--sans);
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
+/* Typography */
+h1,h2,h3,h4{font-family:var(--display);line-height:1.1;letter-spacing:-0.02em}
+a{color:inherit;text-decoration:none}
+p{line-height:1.7;color:var(--text2)}
 
-/* Grid background */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(124,58,237,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(124,58,237,0.03) 1px, transparent 1px);
-  background-size: 48px 48px;
-  pointer-events: none;
-  z-index: 0;
-}
+/* Layout */
+.container{max-width:1200px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+.flex{display:flex}
+.flex-c{display:flex;align-items:center}
+.flex-bc{display:flex;align-items:center;justify-content:space-between}
+.gap4{gap:4px}.gap8{gap:8px}.gap12{gap:12px}.gap16{gap:16px}.gap24{gap:24px}
 
-/* Glow orbs */
-body::after {
-  content: '';
-  position: fixed;
-  top: -20%;
-  right: -10%;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
+/* Pages */
+.page{display:none;min-height:100vh;padding-top:56px}
+.page.active{display:block}
+#page-auth{display:none;min-height:100vh;align-items:center;justify-content:center;padding-top:56px}
+#page-auth.active{display:flex}
 
-/* ═══════════════════════════════════════════════
-   TYPOGRAPHY
-═══════════════════════════════════════════════ */
-h1, h2, h3, h4 { font-family: var(--sans); font-weight: 700; line-height: 1.15; }
-p { line-height: 1.7; color: var(--text-mid); }
-a { color: inherit; text-decoration: none; }
-code, .mono { font-family: var(--mono); }
+/* ── COMPONENTS ─────────────────────────────────── */
 
-/* ═══════════════════════════════════════════════
-   LAYOUT UTILS
-═══════════════════════════════════════════════ */
-.container { max-width: 1160px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
-.flex { display: flex; }
-.flex-center { display: flex; align-items: center; justify-content: center; }
-.flex-between { display: flex; align-items: center; justify-content: space-between; }
-.gap-8 { gap: 8px; }
-.gap-12 { gap: 12px; }
-.gap-16 { gap: 16px; }
-.gap-24 { gap: 24px; }
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+/* Badge */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase}
+.badge-green{background:var(--green-d);color:var(--green);border:1px solid rgba(0,255,136,0.2)}
+.badge-red{background:var(--red-d);color:var(--red);border:1px solid rgba(255,59,59,0.2)}
+.badge-amber{background:var(--amber-d);color:var(--amber);border:1px solid rgba(255,184,0,0.2)}
+.badge-gray{background:var(--bg3);color:var(--text2);border:1px solid var(--border)}
+.badge-admin{background:linear-gradient(135deg,#1a0a00,#3d1a00);color:#FFB800;border:1px solid rgba(255,184,0,0.4)}
 
-/* ═══════════════════════════════════════════════
-   COMPONENTS
-═══════════════════════════════════════════════ */
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:8px 16px;border-radius:var(--r);font-family:var(--mono);font-size:12px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all 0.15s;white-space:nowrap;letter-spacing:0.04em}
+.btn-primary{background:var(--green);color:#000;border-color:var(--green)}
+.btn-primary:hover{background:#00FF99;box-shadow:0 0 20px rgba(0,255,136,0.3)}
+.btn-secondary{background:transparent;color:var(--text);border-color:var(--border2)}
+.btn-secondary:hover{border-color:var(--green);color:var(--green)}
+.btn-ghost{background:transparent;color:var(--text2);border-color:transparent}
+.btn-ghost:hover{color:var(--text);border-color:var(--border)}
+.btn-danger{background:var(--red-d);color:var(--red);border-color:rgba(255,59,59,0.3)}
+.btn-danger:hover{background:#5a0000;border-color:var(--red)}
+.btn-lg{padding:12px 24px;font-size:13px}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
 
-/* --- Badge --- */
-.badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 10px; border-radius: 999px;
-  font-family: var(--mono); font-size: 11px; font-weight: 500;
-  letter-spacing: 0.03em;
-}
-.badge-violet { background: rgba(124,58,237,0.15); color: var(--violet-l); border: 1px solid rgba(124,58,237,0.3); }
-.badge-cyan   { background: rgba(6,182,212,0.1);   color: var(--cyan-l);   border: 1px solid rgba(6,182,212,0.25); }
-.badge-green  { background: rgba(16,185,129,0.1);  color: var(--green);    border: 1px solid rgba(16,185,129,0.25); }
-.badge-red    { background: rgba(239,68,68,0.1);   color: var(--red);      border: 1px solid rgba(239,68,68,0.25); }
-.badge-amber  { background: rgba(245,158,11,0.1);  color: var(--amber);    border: 1px solid rgba(245,158,11,0.25); }
+/* Input */
+.input-grp{display:flex;flex-direction:column;gap:5px}
+.input-lbl{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em}
+.input{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-family:var(--mono);font-size:13px;color:var(--text);outline:none;width:100%;transition:border-color 0.15s}
+.input:focus{border-color:var(--green)}
+.input::placeholder{color:var(--text3)}
+textarea.input{resize:vertical;min-height:100px;font-size:12px;line-height:1.6}
 
-/* --- Buttons --- */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 10px 20px; border-radius: var(--r);
-  font-family: var(--sans); font-size: 14px; font-weight: 600;
-  cursor: pointer; border: none; transition: all 0.2s; white-space: nowrap;
-  position: relative; overflow: hidden;
-}
-.btn::after {
-  content: ''; position: absolute; inset: 0;
-  background: white; opacity: 0; transition: opacity 0.15s;
-}
-.btn:hover::after { opacity: 0.06; }
-.btn:active::after { opacity: 0.12; }
+/* Card */
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r2)}
+.card-p{padding:20px}
+.card-p-lg{padding:28px}
 
-.btn-primary {
-  background: var(--violet); color: #fff;
-  box-shadow: 0 0 24px rgba(124,58,237,0.4);
-}
-.btn-primary:hover { box-shadow: 0 0 32px rgba(124,58,237,0.6); }
+/* Divider */
+.divider{height:1px;background:var(--border);margin:20px 0}
 
-.btn-secondary {
-  background: var(--card); color: var(--text);
-  border: 1px solid var(--border);
-}
-.btn-secondary:hover { border-color: var(--border-h); background: var(--card-h); }
+/* Coin */
+.coin{display:inline-flex;align-items:center;gap:6px;background:var(--amber-d);border:1px solid rgba(255,184,0,0.25);padding:4px 12px;border-radius:4px;font-size:12px;font-weight:700;color:var(--amber)}
 
-.btn-ghost {
-  background: transparent; color: var(--text-mid);
-  border: 1px solid transparent;
-}
-.btn-ghost:hover { color: var(--text); border-color: var(--border); }
+/* Spinner */
+.spin{width:14px;height:14px;border:2px solid rgba(0,255,136,0.2);border-top-color:var(--green);border-radius:50%;animation:spin 0.6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-.btn-cyan {
-  background: var(--cyan); color: var(--bg);
-  box-shadow: 0 0 24px rgba(6,182,212,0.35);
-}
-.btn-danger {
-  background: rgba(239,68,68,0.15); color: var(--red);
-  border: 1px solid rgba(239,68,68,0.3);
-}
+/* Toast */
+#toasts{position:fixed;bottom:20px;right:20px;z-index:1000;display:flex;flex-direction:column;gap:8px}
+.toast{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:12px 16px;font-size:12px;min-width:260px;animation:toast-in 0.2s ease;box-shadow:0 4px 24px rgba(0,0,0,0.5)}
+.toast.ok{border-left:3px solid var(--green)}
+.toast.err{border-left:3px solid var(--red)}
+.toast.warn{border-left:3px solid var(--amber)}
+.toast.info{border-left:3px solid var(--blue)}
+@keyframes toast-in{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
 
-.btn-lg { padding: 14px 28px; font-size: 15px; border-radius: var(--r-lg); }
-.btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 8px; }
-.btn-icon { padding: 8px; border-radius: 8px; }
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex}
+.modal{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:100%;max-width:500px;animation:modal-in 0.15s ease}
+.modal-lg{max-width:760px}
+@keyframes modal-in{from{opacity:0;transform:scale(0.97)}to{opacity:1;transform:none}}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.modal-ttl{font-size:15px;font-weight:700}
+.modal-close{background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;padding:2px 6px;border-radius:4px}
+.modal-close:hover{color:var(--text);background:var(--bg3)}
+.modal-ftr{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
 
-/* --- Card --- */
-.card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  backdrop-filter: blur(12px);
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.card:hover { border-color: var(--border-h); box-shadow: var(--glow-v); }
-.card-p { padding: 24px; }
-.card-p-lg { padding: 32px; }
+/* Code editor */
+.editor-wrap{position:relative;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.editor-topbar{background:var(--bg2);padding:8px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.editor-lang{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.1em}
+.editor-textarea{width:100%;background:var(--bg1);border:none;padding:16px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;resize:vertical;min-height:200px;line-height:1.7;tab-size:2}
+.editor-textarea:focus{outline:none}
 
-/* --- Input --- */
-.input-group { display: flex; flex-direction: column; gap: 6px; }
-.input-label { font-size: 13px; font-weight: 600; color: var(--text-mid); font-family: var(--mono); }
-.input {
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 11px 14px;
-  font-family: var(--sans); font-size: 14px; color: var(--text);
-  transition: border-color 0.2s, box-shadow 0.2s; outline: none; width: 100%;
-}
-.input:focus { border-color: var(--violet); box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
-.input::placeholder { color: var(--text-dim); }
-textarea.input { resize: vertical; min-height: 120px; font-family: var(--mono); font-size: 13px; }
+/* Status dot */
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.dot-green{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dot-red{background:var(--red)}
+.dot-amber{background:var(--amber)}
+.dot-gray{background:var(--text3)}
 
-/* --- Divider --- */
-.divider { height: 1px; background: var(--border); margin: 24px 0; }
+/* ── NAVBAR ──────────────────────────────────────── */
+#nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(8,8,8,0.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-in{height:56px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:var(--display);font-size:16px;font-weight:900;color:var(--text);display:flex;align-items:center;gap:10px;cursor:pointer;letter-spacing:-0.03em}
+.nav-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.nav-links{display:flex;align-items:center;gap:2px}
+.nav-lnk{padding:5px 12px;border-radius:var(--r);font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;transition:all 0.15s}
+.nav-lnk:hover{color:var(--text);background:var(--bg2)}
+.nav-lnk.on{color:var(--green)}
+.nav-right{display:flex;align-items:center;gap:10px}
 
-/* --- Coin display --- */
-.coin-display {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25);
-  padding: 6px 14px; border-radius: 999px;
-  font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--amber);
-}
-.coin-icon { font-size: 16px; }
+/* ── LANDING ─────────────────────────────────────── */
+.hero{padding:100px 0 80px;position:relative}
+.hero-tag{font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.hero-tag::before{content:'';display:block;width:20px;height:1px;background:var(--green)}
+.hero-h1{font-size:clamp(40px,6vw,76px);font-weight:900;line-height:1.0;letter-spacing:-0.04em;margin-bottom:24px}
+.hero-h1 em{font-style:normal;color:var(--green)}
+.hero-sub{font-size:15px;color:var(--text2);max-width:480px;margin-bottom:40px;line-height:1.8}
+.hero-cta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:80px}
+.hero-terminal{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;max-width:640px;margin-bottom:80px}
+.term-hdr{background:var(--bg2);padding:10px 14px;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--border)}
+.term-btn{width:10px;height:10px;border-radius:50%}
+.term-body{padding:18px 20px;font-size:12px;line-height:2.1}
+.term-line{display:flex;gap:10px}
+.tp{color:var(--green)}
+.tc{color:var(--text)}
+.to{color:var(--text2)}
+.tg{color:var(--green)}
+.tu{color:#60A5FA}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 
-/* --- Tabs --- */
-.tabs { display: flex; gap: 4px; background: var(--bg2); padding: 4px; border-radius: var(--r); border: 1px solid var(--border); }
-.tab {
-  flex: 1; padding: 8px 16px; border-radius: 8px;
-  font-size: 13px; font-weight: 600; cursor: pointer;
-  transition: all 0.2s; color: var(--text-dim); text-align: center;
-  border: none; background: none;
-}
-.tab.active { background: var(--violet); color: white; box-shadow: 0 0 16px rgba(124,58,237,0.4); }
-.tab:hover:not(.active) { color: var(--text); background: var(--card); }
-
-/* --- Progress bar --- */
-.progress-track { background: var(--bg2); border-radius: 999px; height: 4px; overflow: hidden; }
-.progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--violet), var(--cyan)); transition: width 0.5s; }
-
-/* --- Scrollbar --- */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--violet-d); }
-
-/* ═══════════════════════════════════════════════
-   NAVBAR
-═══════════════════════════════════════════════ */
-#navbar {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  height: 64px;
-  background: rgba(8,8,16,0.8);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-  transition: all 0.3s;
-}
-.nav-inner {
-  height: 64px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-.nav-logo {
-  font-family: var(--mono); font-size: 18px; font-weight: 700;
-  color: var(--text); cursor: pointer;
-  display: flex; align-items: center; gap: 10px;
-}
-.nav-logo-icon {
-  width: 32px; height: 32px;
-  background: linear-gradient(135deg, var(--violet), var(--cyan));
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px;
-}
-.nav-links { display: flex; align-items: center; gap: 4px; }
-.nav-link {
-  padding: 6px 14px; border-radius: 8px;
-  font-size: 14px; font-weight: 600; color: var(--text-mid);
-  cursor: pointer; transition: all 0.2s;
-}
-.nav-link:hover { color: var(--text); background: var(--card); }
-.nav-link.active { color: var(--violet-l); }
-.nav-right { display: flex; align-items: center; gap: 12px; }
-
-/* ═══════════════════════════════════════════════
-   PAGES
-═══════════════════════════════════════════════ */
-.page { display: none; padding-top: 64px; min-height: 100vh; }
-.page.active { display: block; }
-
-/* ═══════════════════════════════════════════════
-   LANDING PAGE
-═══════════════════════════════════════════════ */
-#page-landing .hero {
-  padding: 120px 0 80px;
-  text-align: center;
-  position: relative;
-}
-.hero-eyebrow {
-  margin-bottom: 20px;
-}
-.hero-title {
-  font-size: clamp(48px, 7vw, 84px);
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  margin-bottom: 24px;
-}
-.hero-title .grad {
-  background: linear-gradient(135deg, var(--violet-l) 0%, var(--cyan) 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.hero-sub {
-  font-size: 18px; color: var(--text-mid);
-  max-width: 560px; margin: 0 auto 40px;
-  line-height: 1.7;
-}
-.hero-cta { display: flex; gap: 12px; justify-content: center; margin-bottom: 64px; }
-.hero-stats {
-  display: flex; justify-content: center; gap: 48px;
-  padding: 24px 0;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 80px;
-}
-.hero-stat-num {
-  font-size: 28px; font-weight: 800; font-family: var(--mono);
-  background: linear-gradient(135deg, var(--violet-l), var(--cyan));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.hero-stat-lbl { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
-
-/* Terminal mock */
-.terminal {
-  background: var(--bg1); border: 1px solid var(--border);
-  border-radius: var(--r-lg); overflow: hidden;
-  max-width: 680px; margin: 0 auto 80px;
-  box-shadow: var(--shadow), var(--glow-v);
-}
-.terminal-bar {
-  background: var(--bg2); padding: 12px 16px;
-  display: flex; align-items: center; gap: 8px;
-  border-bottom: 1px solid var(--border);
-}
-.terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
-.term-body { padding: 20px 24px; font-family: var(--mono); font-size: 13px; line-height: 2; }
-.term-line { display: flex; gap: 12px; }
-.term-prompt { color: var(--violet-l); }
-.term-cmd { color: var(--text); }
-.term-out { color: var(--text-mid); }
-.term-ok { color: var(--green); }
-.term-url { color: var(--cyan); }
+/* Stats row */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;margin-bottom:80px}
+.stat-item{background:var(--bg1);padding:24px;text-align:center}
+.stat-n{font-family:var(--display);font-size:28px;font-weight:900;color:var(--green);letter-spacing:-0.03em}
+.stat-l{font-size:11px;color:var(--text2);margin-top:4px;text-transform:uppercase;letter-spacing:0.08em}
 
 /* Features */
-.features { padding: 80px 0; }
-.section-label {
-  font-family: var(--mono); font-size: 12px; font-weight: 500;
-  color: var(--violet-l); letter-spacing: 0.12em; text-transform: uppercase;
-  margin-bottom: 12px;
-}
-.section-title { font-size: clamp(28px, 4vw, 42px); font-weight: 800; margin-bottom: 16px; }
-.section-sub { font-size: 16px; color: var(--text-mid); max-width: 480px; }
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;margin-top:40px}
+.feat{background:var(--bg1);padding:28px;transition:background 0.2s}
+.feat:hover{background:var(--bg2)}
+.feat-icon{font-size:22px;margin-bottom:14px}
+.feat-t{font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text)}
+.feat-d{font-size:12px;color:var(--text2);line-height:1.7}
 
-.features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; }
-.feature-card {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--r-lg); padding: 28px;
-  transition: all 0.3s; cursor: default;
-}
-.feature-card:hover {
-  border-color: var(--border-h);
-  transform: translateY(-4px);
-  box-shadow: var(--glow-v);
-}
-.feature-icon {
-  width: 44px; height: 44px;
-  background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(6,182,212,0.2));
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; margin-bottom: 16px;
-}
-.feature-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
-.feature-desc { font-size: 14px; color: var(--text-mid); line-height: 1.6; }
+/* Section */
+.sec-lbl{font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sec-lbl::before{content:'';display:block;width:16px;height:1px;background:var(--green)}
+.sec-h{font-size:clamp(22px,3vw,36px);font-weight:900;margin-bottom:12px;letter-spacing:-0.03em}
+.sec-sub{font-size:14px;color:var(--text2);max-width:440px}
 
-/* Pricing */
-.pricing { padding: 80px 0; }
-.pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; }
-.pricing-card {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--r-lg); padding: 32px;
-  position: relative; transition: all 0.3s;
-}
-.pricing-card.featured {
-  border-color: var(--violet);
-  box-shadow: var(--glow-v);
-  background: linear-gradient(135deg, rgba(124,58,237,0.08), rgba(6,182,212,0.04));
-}
-.pricing-card.featured::before {
-  content: 'POPULAIRE';
-  position: absolute; top: -1px; left: 50%; transform: translateX(-50%);
-  background: linear-gradient(90deg, var(--violet), var(--cyan));
-  color: white; font-family: var(--mono); font-size: 10px; font-weight: 700;
-  letter-spacing: 0.1em; padding: 4px 16px;
-  border-radius: 0 0 8px 8px;
-}
-.pricing-amount {
-  font-family: var(--mono); font-size: 40px; font-weight: 700;
-  color: var(--text); margin: 16px 0 4px;
-}
-.pricing-amount span { font-size: 20px; color: var(--text-mid); }
-.pricing-coin { font-size: 13px; color: var(--amber); font-family: var(--mono); margin-bottom: 20px; }
-.pricing-features { list-style: none; margin-bottom: 28px; }
-.pricing-features li {
-  padding: 8px 0; font-size: 14px; color: var(--text-mid);
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: 10px;
-}
-.pricing-features li::before { content: '✓'; color: var(--green); font-weight: 700; }
+/* ── STORE (fusion tarifs+boutique) ─────────────── */
+.store-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:32px 0}
+.pack{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r2);padding:24px;cursor:pointer;transition:all 0.2s;position:relative}
+.pack:hover{border-color:var(--green);background:var(--bg2)}
+.pack.sel{border-color:var(--green);background:rgba(0,255,136,0.03)}
+.pack.featured{border-color:rgba(0,255,136,0.4)}
+.pack-top{height:3px;background:var(--green);border-radius:var(--r2) var(--r2) 0 0;position:absolute;top:-1px;left:-1px;right:-1px;display:none}
+.pack.featured .pack-top{display:block}
+.pack-name{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px}
+.pack-coins{font-family:var(--display);font-size:36px;font-weight:900;color:var(--amber);letter-spacing:-0.03em;line-height:1}
+.pack-price{font-size:12px;color:var(--text2);margin:6px 0 16px}
+.pack-items{list-style:none;margin-bottom:20px}
+.pack-items li{font-size:11px;color:var(--text2);padding:4px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.pack-items li::before{content:'—';color:var(--green);font-weight:700}
 
-/* ═══════════════════════════════════════════════
-   AUTH PAGE
-═══════════════════════════════════════════════ */
-#page-auth {
-  display: none;
-  min-height: 100vh;
-  align-items: center;
-  justify-content: center;
-  padding-top: 64px;
-}
-#page-auth.active { display: flex; }
+.pay-methods{display:flex;gap:10px;margin:20px 0}
+.pay-method{flex:1;padding:14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;text-align:center;transition:all 0.15s}
+.pay-method.sel{border-color:var(--green);background:rgba(0,255,136,0.05)}
+.pay-method:hover{border-color:var(--border2)}
+.pay-icon{font-size:20px;margin-bottom:4px}
+.pay-name{font-size:11px;font-weight:600;color:var(--text2)}
+.pay-method.sel .pay-name{color:var(--green)}
 
-.auth-box {
-  width: 100%; max-width: 440px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 40px;
-  backdrop-filter: blur(20px);
-  box-shadow: var(--shadow), var(--glow-v);
-}
-.auth-logo { text-align: center; margin-bottom: 32px; }
-.auth-title { font-size: 24px; font-weight: 800; text-align: center; margin-bottom: 6px; }
-.auth-sub { text-align: center; font-size: 14px; color: var(--text-mid); margin-bottom: 28px; }
-.auth-form { display: flex; flex-direction: column; gap: 16px; }
-.auth-divider {
-  display: flex; align-items: center; gap: 12px;
-  color: var(--text-dim); font-size: 12px; font-family: var(--mono);
-  margin: 8px 0;
-}
-.auth-divider::before, .auth-divider::after {
-  content: ''; flex: 1; height: 1px; background: var(--border);
-}
-.auth-switch { text-align: center; font-size: 13px; color: var(--text-mid); margin-top: 20px; }
-.auth-switch a { color: var(--violet-l); cursor: pointer; font-weight: 600; }
-.auth-switch a:hover { text-decoration: underline; }
+/* ── AUTH ────────────────────────────────────────── */
+.auth-box{width:100%;max-width:400px;background:var(--bg1);border:1px solid var(--border);border-radius:var(--r2);padding:36px}
+.auth-logo{text-align:center;margin-bottom:28px}
+.auth-logo-mark{width:40px;height:40px;background:var(--green);border-radius:var(--r);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-family:var(--display);font-size:18px;font-weight:900;color:#000}
+.auth-h{font-size:18px;font-weight:700;text-align:center;margin-bottom:4px}
+.auth-sub{font-size:12px;color:var(--text2);text-align:center;margin-bottom:24px}
+.auth-form{display:flex;flex-direction:column;gap:14px}
+.auth-sep{display:flex;align-items:center;gap:10px;color:var(--text3);font-size:11px;margin:4px 0}
+.auth-sep::before,.auth-sep::after{content:'';flex:1;height:1px;background:var(--border)}
+.auth-sw{text-align:center;font-size:12px;color:var(--text2);margin-top:16px}
+.auth-sw a{color:var(--green);cursor:pointer}
+.honeypot{display:none!important;visibility:hidden!important}
 
-/* ═══════════════════════════════════════════════
-   DASHBOARD
-═══════════════════════════════════════════════ */
-#page-dashboard .dash-header {
-  padding: 40px 0 32px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 40px;
-}
-.dash-welcome { font-size: 28px; font-weight: 800; margin-bottom: 4px; }
-.dash-sub { color: var(--text-mid); font-size: 14px; }
+/* ── DASHBOARD ───────────────────────────────────── */
+.dash-hdr{padding:32px 0 24px;border-bottom:1px solid var(--border);margin-bottom:28px}
+.dash-hw{font-size:22px;font-weight:900;letter-spacing:-0.03em;margin-bottom:2px}
+.dash-sub{font-size:12px;color:var(--text2)}
+.dash-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;margin-bottom:28px}
+.ds{background:var(--bg1);padding:16px 20px}
+.ds-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px}
+.ds-val{font-family:var(--display);font-size:24px;font-weight:900;letter-spacing:-0.03em}
+.ds-sub{font-size:11px;color:var(--text2);margin-top:2px}
 
-.dash-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 40px; }
-.stat-card {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 20px;
-}
-.stat-label { font-size: 12px; font-family: var(--mono); color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
-.stat-value { font-size: 28px; font-weight: 800; font-family: var(--mono); }
-.stat-sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sec-ttl{font-size:13px;font-weight:700;color:var(--text)}
 
-.setups-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-.setups-title { font-size: 18px; font-weight: 700; }
+/* Setup card */
+.setup-card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r2);padding:18px 20px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.setup-card:hover{border-color:var(--border2);background:var(--bg2);transform:translateX(2px)}
+.setup-card-l{display:flex;align-items:center;gap:14px}
+.setup-emoji{width:38px;height:38px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:18px}
+.setup-name{font-size:13px;font-weight:700;margin-bottom:2px}
+.setup-meta{font-size:11px;color:var(--text2);font-family:var(--mono)}
+.setup-card-r{display:flex;align-items:center;gap:10px}
+.setup-arrow{color:var(--text3);font-size:16px;transition:all 0.15s}
+.setup-card:hover .setup-arrow{color:var(--green);transform:translateX(3px)}
 
-.setup-card {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--r-lg); padding: 24px;
-  cursor: pointer; transition: all 0.2s;
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 12px;
-}
-.setup-card:hover {
-  border-color: var(--border-h);
-  background: var(--card-h);
-  transform: translateX(4px);
-}
-.setup-card-left { display: flex; align-items: center; gap: 16px; }
-.setup-icon {
-  width: 44px; height: 44px;
-  background: linear-gradient(135deg, var(--violet-d), rgba(6,182,212,0.2));
-  border-radius: 10px; border: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px;
-}
-.setup-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-.setup-meta { font-size: 12px; font-family: var(--mono); color: var(--text-dim); }
-.setup-card-right { display: flex; align-items: center; gap: 12px; }
-.setup-arrow { color: var(--text-dim); font-size: 18px; transition: transform 0.2s; }
-.setup-card:hover .setup-arrow { transform: translateX(4px); color: var(--violet-l); }
+/* Empty state */
+.empty{text-align:center;padding:56px 20px;border:1px dashed var(--border);border-radius:var(--r2)}
+.empty-icon{font-size:36px;margin-bottom:12px;opacity:0.5}
+.empty-t{font-size:14px;font-weight:700;margin-bottom:6px}
+.empty-s{font-size:12px;color:var(--text2);margin-bottom:20px}
 
-.empty-state {
-  text-align: center; padding: 64px 24px;
-  border: 2px dashed var(--border); border-radius: var(--r-lg);
-}
-.empty-icon { font-size: 48px; margin-bottom: 16px; }
-.empty-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-.empty-sub { color: var(--text-mid); font-size: 14px; margin-bottom: 24px; }
+/* ── SETUP DETAIL ────────────────────────────────── */
+.setup-hdr{padding:28px 0 20px;border-bottom:1px solid var(--border);margin-bottom:24px}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);margin-bottom:12px;cursor:pointer}
+.breadcrumb:hover span{color:var(--green)}
+.breadcrumb span{color:var(--text2);transition:color 0.15s}
 
-/* ═══════════════════════════════════════════════
-   SETUP DETAIL PAGE
-═══════════════════════════════════════════════ */
-#page-setup .setup-detail-header {
-  padding: 40px 0 28px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 32px;
-}
-.breadcrumb {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 13px; font-family: var(--mono); color: var(--text-dim);
-  margin-bottom: 16px; cursor: pointer;
-}
-.breadcrumb span { color: var(--text-mid); }
-.breadcrumb:hover span { color: var(--violet-l); }
+/* Script row */
+.script-row{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;transition:all 0.15s;margin-bottom:6px}
+.script-row:hover{border-color:var(--border2);background:var(--bg2)}
+.script-row-l{display:flex;align-items:center;gap:12px}
+.lang-tag{padding:3px 8px;border-radius:3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em}
+.lt-py{background:rgba(59,130,246,0.15);color:#60A5FA;border:1px solid rgba(59,130,246,0.2)}
+.lt-js{background:rgba(255,184,0,0.15);color:var(--amber);border:1px solid rgba(255,184,0,0.2)}
+.lt-ts{background:rgba(0,255,136,0.1);color:var(--green);border:1px solid rgba(0,255,136,0.2)}
+.lt-sh{background:var(--bg3);color:var(--text2);border:1px solid var(--border)}
+.script-name{font-size:13px;font-weight:600;margin-bottom:1px}
+.script-meta{font-size:11px;color:var(--text2)}
+.script-row-r{display:flex;align-items:center;gap:6px}
 
-.script-list { display: flex; flex-direction: column; gap: 10px; }
-.script-row {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 16px 20px;
-  display: flex; align-items: center; justify-content: space-between;
-  transition: all 0.2s;
-}
-.script-row:hover { border-color: var(--border-h); background: var(--card-h); }
-.script-row-left { display: flex; align-items: center; gap: 14px; }
-.script-lang-badge {
-  padding: 4px 10px; border-radius: 6px;
-  font-family: var(--mono); font-size: 11px; font-weight: 700;
-  text-transform: uppercase;
-}
-.lang-python { background: rgba(59,130,246,0.15); color: #60A5FA; border: 1px solid rgba(59,130,246,0.25); }
-.lang-js     { background: rgba(245,158,11,0.15);  color: var(--amber); border: 1px solid rgba(245,158,11,0.25); }
-.lang-ts     { background: rgba(6,182,212,0.15);   color: var(--cyan);  border: 1px solid rgba(6,182,212,0.25); }
-.lang-bash   { background: rgba(16,185,129,0.15);  color: var(--green); border: 1px solid rgba(16,185,129,0.25); }
-.lang-other  { background: var(--bg3); color: var(--text-mid); border: 1px solid var(--border); }
-.script-name  { font-size: 14px; font-weight: 600; }
-.script-meta  { font-size: 12px; font-family: var(--mono); color: var(--text-dim); }
-.script-row-right { display: flex; align-items: center; gap: 8px; }
+/* Output panel */
+.output{background:#050505;border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;font-size:11px;line-height:1.9;max-height:220px;overflow-y:auto;margin-top:8px;display:none}
+.output.on{display:block}
+.o-out{color:var(--text)}
+.o-err{color:var(--red)}
+.o-inf{color:var(--text2)}
+.o-ok{color:var(--green)}
 
-/* Run output */
-.run-output {
-  background: var(--bg1); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 16px 20px;
-  font-family: var(--mono); font-size: 12px; line-height: 1.8;
-  max-height: 240px; overflow-y: auto; margin-top: 12px;
-  display: none;
-}
-.run-output.visible { display: block; }
-.out-line-stdout { color: var(--text); }
-.out-line-stderr { color: var(--red); }
-.out-line-info   { color: var(--text-dim); }
+/* Logs live */
+.logs-panel{background:#050505;border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;margin-top:16px}
+.logs-hdr{background:var(--bg2);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);font-size:11px;color:var(--text2)}
+.logs-body{padding:12px 14px;font-size:11px;line-height:1.9;max-height:180px;overflow-y:auto;font-family:var(--mono)}
 
-/* URL bar */
-.url-bar {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 10px 16px;
-  font-family: var(--mono); font-size: 13px;
-  margin-top: 20px;
-}
-.url-bar-icon { color: var(--green); font-size: 10px; }
-.url-text { color: var(--cyan); flex: 1; }
-.url-copy-btn {
-  background: none; border: none; color: var(--text-dim);
-  cursor: pointer; font-size: 14px; padding: 2px 6px;
-  border-radius: 4px; transition: all 0.15s;
-}
-.url-copy-btn:hover { color: var(--text); background: var(--card); }
+/* ── ADMIN ───────────────────────────────────────── */
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+.admin-section{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r2);padding:20px}
+.admin-sec-t{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.user-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:12px}
+.user-row:last-child{border-bottom:none}
+.config-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.config-row:last-child{border-bottom:none}
+.config-key{font-size:12px;color:var(--text2)}
+.config-val{font-size:12px;font-weight:600;color:var(--text)}
 
-/* Upload zone */
-.upload-zone {
-  border: 2px dashed var(--border); border-radius: var(--r-lg);
-  padding: 40px; text-align: center; cursor: pointer;
-  transition: all 0.2s;
-}
-.upload-zone:hover, .upload-zone.dragover {
-  border-color: var(--violet);
-  background: rgba(124,58,237,0.05);
-}
-.upload-icon { font-size: 32px; margin-bottom: 12px; }
-.upload-text { font-size: 14px; color: var(--text-mid); }
-.upload-sub  { font-size: 12px; font-family: var(--mono); color: var(--text-dim); margin-top: 6px; }
-
-/* ═══════════════════════════════════════════════
-   STORE PAGE
-═══════════════════════════════════════════════ */
-#page-store .store-header { padding: 40px 0 32px; border-bottom: 1px solid var(--border); margin-bottom: 40px; }
-
-.store-packs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 48px; }
-.pack-card {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--r-lg); padding: 28px;
-  cursor: pointer; transition: all 0.3s;
-  text-align: center; position: relative; overflow: hidden;
-}
-.pack-card::before {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(135deg, transparent 40%, rgba(124,58,237,0.04));
-  pointer-events: none;
-}
-.pack-card:hover { border-color: var(--violet); transform: translateY(-6px); box-shadow: var(--glow-v); }
-.pack-card.selected { border-color: var(--violet); background: rgba(124,58,237,0.08); }
-.pack-amount { font-size: 48px; font-weight: 800; font-family: var(--mono); color: var(--amber); margin: 12px 0; }
-.pack-name { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
-.pack-euro { font-size: 14px; color: var(--text-mid); font-family: var(--mono); margin-bottom: 20px; }
-.pack-bonus { font-size: 12px; color: var(--green); font-family: var(--mono); }
-.pack-what {
-  margin: 16px 0; padding: 12px; background: var(--bg2);
-  border-radius: 8px; text-align: left;
-}
-.pack-what-item { font-size: 12px; color: var(--text-mid); padding: 3px 0; display: flex; gap: 8px; }
-.pack-what-item::before { content: '→'; color: var(--violet-l); }
-
-.payment-row {
-  display: flex; align-items: center; gap: 16px;
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--r-lg); padding: 24px; margin-top: 24px;
-}
-.payment-method {
-  flex: 1; padding: 16px; background: var(--bg2);
-  border: 2px solid var(--border); border-radius: var(--r);
-  cursor: pointer; text-align: center; transition: all 0.2s;
-}
-.payment-method.selected { border-color: var(--violet); background: rgba(124,58,237,0.08); }
-.payment-method:hover { border-color: var(--border-h); }
-.payment-logo { font-size: 24px; margin-bottom: 6px; }
-.payment-name { font-size: 13px; font-weight: 600; }
-
-/* ═══════════════════════════════════════════════
-   MODAL
-═══════════════════════════════════════════════ */
-.modal-overlay {
-  position: fixed; inset: 0; z-index: 200;
-  background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
-  display: none; align-items: center; justify-content: center;
-  padding: 24px;
-}
-.modal-overlay.open { display: flex; }
-.modal {
-  background: var(--bg1); border: 1px solid var(--border);
-  border-radius: var(--r-lg); padding: 32px;
-  width: 100%; max-width: 520px;
-  box-shadow: var(--shadow), var(--glow-v);
-  animation: modal-in 0.2s ease;
-}
-@keyframes modal-in { from { opacity:0; transform:scale(0.96) translateY(8px); } to { opacity:1; transform:none; } }
-.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-.modal-title { font-size: 18px; font-weight: 700; }
-.modal-close { background: none; border: none; color: var(--text-dim); font-size: 20px; cursor: pointer; padding: 4px; border-radius: 6px; }
-.modal-close:hover { color: var(--text); background: var(--card); }
-.modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
-
-/* ═══════════════════════════════════════════════
-   TOAST
-═══════════════════════════════════════════════ */
-#toast-container {
-  position: fixed; bottom: 24px; right: 24px;
-  z-index: 300; display: flex; flex-direction: column; gap: 10px;
-}
-.toast {
-  display: flex; align-items: center; gap: 12px;
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 14px 18px;
-  min-width: 280px; box-shadow: var(--shadow);
-  animation: toast-in 0.25s ease;
-  font-size: 14px;
-}
-@keyframes toast-in { from { opacity:0; transform:translateX(16px); } to { opacity:1; transform:none; } }
-.toast-icon { font-size: 16px; }
-.toast.success { border-left: 3px solid var(--green); }
-.toast.error   { border-left: 3px solid var(--red); }
-.toast.info    { border-left: 3px solid var(--cyan); }
-.toast.warning { border-left: 3px solid var(--amber); }
-
-/* ═══════════════════════════════════════════════
-   LOADING SPINNER
-═══════════════════════════════════════════════ */
-.spinner {
-  width: 18px; height: 18px;
-  border: 2px solid rgba(255,255,255,0.15);
-  border-top-color: var(--violet-l);
-  border-radius: 50%; animation: spin 0.7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ═══════════════════════════════════════════════
-   ANIMATIONS
-═══════════════════════════════════════════════ */
-@keyframes fade-up {
-  from { opacity:0; transform:translateY(20px); }
-  to   { opacity:1; transform:none; }
-}
-.fade-up { animation: fade-up 0.5s ease forwards; }
-.delay-1 { animation-delay: 0.1s; opacity:0; }
-.delay-2 { animation-delay: 0.2s; opacity:0; }
-.delay-3 { animation-delay: 0.3s; opacity:0; }
-.delay-4 { animation-delay: 0.4s; opacity:0; }
-
-/* ═══════════════════════════════════════════════
-   HONEYPOT (caché, piège les bots)
-═══════════════════════════════════════════════ */
-.ew-field-username { display: none !important; visibility: hidden !important; }
-
-/* ═══════════════════════════════════════════════
-   RESPONSIVE
-═══════════════════════════════════════════════ */
-@media (max-width: 768px) {
-  .features-grid, .pricing-grid, .store-packs { grid-template-columns: 1fr; }
-  .dash-stats { grid-template-columns: 1fr 1fr; }
-  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-  .hero-cta { flex-direction: column; align-items: center; }
-  .hero-stats { gap: 24px; flex-wrap: wrap; }
-  .nav-links { display: none; }
+/* Responsive */
+@media(max-width:768px){
+  .feat-grid,.store-grid{grid-template-columns:1fr}
+  .dash-stats,.stats-row{grid-template-columns:1fr 1fr}
+  .hero-h1{font-size:36px}
+  .nav-links{display:none}
+  .admin-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════ NAVBAR ═══════════════════ -->
-<nav id="navbar">
+<!-- NAVBAR -->
+<nav id="nav">
   <div class="container">
-    <div class="nav-inner">
-      <div class="nav-logo" onclick="navigate('landing')">
-        <div class="nav-logo-icon" style="background:none;padding:0">
-          <img src="favicon.ico" style="width:32px;height:32px;border-radius:8px;object-fit:cover">
-         </div>
+    <div class="nav-in">
+      <div class="nav-logo" onclick="go('landing')">
+        <div class="nav-logo-dot"></div>
         EwHost
       </div>
       <div class="nav-links" id="nav-links">
-        <div class="nav-link" onclick="navigate('landing')">Accueil</div>
-        <div class="nav-link" id="nav-dashboard" style="display:none" onclick="navigate('dashboard')">Dashboard</div>
-        <div class="nav-link" id="nav-store" style="display:none" onclick="navigate('store')">Boutique</div>
-        <div class="nav-link" onclick="scrollToSection('pricing')">Tarifs</div>
+        <div class="nav-lnk" onclick="go('landing')">Accueil</div>
+        <div class="nav-lnk" id="nl-dash" style="display:none" onclick="go('dashboard')">Dashboard</div>
+        <div class="nav-lnk" id="nl-store" style="display:none" onclick="go('store')">Boutique</div>
+        <div class="nav-lnk" id="nl-admin" style="display:none" onclick="go('admin')">Admin</div>
       </div>
       <div class="nav-right" id="nav-right">
-        <button class="btn btn-ghost btn-sm" onclick="navigate('auth'); setAuthMode('login')">Connexion</button>
-        <button class="btn btn-primary btn-sm" onclick="navigate('auth'); setAuthMode('register')">Commencer →</button>
+        <button class="btn btn-ghost btn-sm" onclick="go('auth');setMode('login')">Connexion</button>
+        <button class="btn btn-primary btn-sm" onclick="go('auth');setMode('register')">Démarrer →</button>
       </div>
     </div>
   </div>
 </nav>
 
-<!-- ═══════════════════ LANDING ═══════════════════ -->
+<!-- ══════════════ LANDING ══════════════ -->
 <div id="page-landing" class="page active">
-  <div class="container">
+<div class="container">
 
-    <!-- Hero -->
-    <section class="hero">
-      <div class="hero-eyebrow fade-up">
-        <span class="badge badge-violet">⚡ Plateforme d'hébergement de scripts</span>
-      </div>
-      <h1 class="hero-title fade-up delay-1">
-        Hébergez vos scripts.<br>
-        <span class="grad">Sans serveur.</span>
-      </h1>
-      <p class="hero-sub fade-up delay-2">
-        Python, JavaScript, TypeScript, Bash — déployez et exécutez vos scripts en quelques secondes dans des environnements Docker isolés et sécurisés.
-      </p>
-      <div class="hero-cta fade-up delay-3">
-        <button class="btn btn-primary btn-lg" onclick="navigate('auth'); setAuthMode('register')">
-          Démarrer gratuitement →
-        </button>
-        <button class="btn btn-secondary btn-lg" onclick="scrollToSection('pricing')">
-          Voir les tarifs
-        </button>
-      </div>
-
-      <!-- Terminal mock -->
-      <div class="terminal fade-up delay-4">
-        <div class="terminal-bar">
-          <div class="terminal-dot" style="background:#FF5F57"></div>
-          <div class="terminal-dot" style="background:#FFBD2E"></div>
-          <div class="terminal-dot" style="background:#28CA41"></div>
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-left:8px">ewhost — bash</span>
-        </div>
-        <div class="term-body">
-          <div class="term-line"><span class="term-prompt">$</span><span class="term-cmd"> ewhost deploy my_bot.py --setup production</span></div>
-          <div class="term-line"><span class="term-out">  ▸ Création du sandbox Docker...</span></div>
-          <div class="term-line"><span class="term-out">  ▸ Installation des dépendances (requirements.txt)...</span></div>
-          <div class="term-line"><span class="term-ok">  ✓ Script déployé avec succès</span></div>
-          <div class="term-line"><span class="term-url">  → https://run.ewhost.io/s/prod/my_bot</span></div>
-          <div class="term-line"><span class="term-prompt">$</span><span class="term-cmd" id="term-cursor"> <span style="animation:blink 1s step-end infinite;display:inline-block">▋</span></span></div>
-        </div>
-      </div>
-
-      <div class="hero-stats fade-up">
-        <div>
-          <div class="hero-stat-num">Docker</div>
-          <div class="hero-stat-lbl">Sandbox isolé</div>
-        </div>
-        <div>
-          <div class="hero-stat-num">4 langs</div>
-          <div class="hero-stat-lbl">Python, JS, TS, Bash</div>
-        </div>
-        <div>
-          <div class="hero-stat-num">&lt;2s</div>
-          <div class="hero-stat-lbl">Temps de démarrage</div>
-        </div>
-        <div>
-          <div class="hero-stat-num">CF</div>
-          <div class="hero-stat-lbl">Anti-bot intégré</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Features -->
-    <section class="features" id="features">
-      <div class="section-label">FONCTIONNALITÉS</div>
-      <h2 class="section-title">Tout ce qu'il vous faut</h2>
-      <p class="section-sub">Une infrastructure complète pour héberger, gérer et exécuter vos scripts sans vous soucier du serveur.</p>
-
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">🐳</div>
-          <div class="feature-title">Sandbox Docker</div>
-          <div class="feature-desc">Chaque script tourne dans un conteneur Docker isolé. Aucune interaction entre utilisateurs, sécurité maximale.</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🛡️</div>
-          <div class="feature-title">Anti-bot Cloudflare</div>
-          <div class="feature-desc">Protection native Cloudflare + honeypot + proxy masqué. Les bots ne peuvent pas identifier l'infrastructure réelle.</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">⚡</div>
-          <div class="feature-title">Déploiement instantané</div>
-          <div class="feature-desc">Upload votre fichier, on s'occupe du reste. Démarrage en moins de 2 secondes, URL publique immédiate.</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">📦</div>
-          <div class="feature-title">Setups organisés</div>
-          <div class="feature-desc">Groupez vos scripts par projet dans des setups dédiés. Variables d'env, logs, monitoring — tout au même endroit.</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🔗</div>
-          <div class="feature-title">URL publique sécurisée</div>
-          <div class="feature-desc">Chaque script reçoit une URL unique via notre proxy Cloudflare. L'adresse du serveur réel reste totalement masquée.</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">💰</div>
-          <div class="feature-title">Ewcoins — Pay as you go</div>
-          <div class="feature-desc">Achetez uniquement ce dont vous avez besoin. 1 Ewcoin = 0.10€. Aucun abonnement forcé, aucune surprise.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Pricing -->
-    <section class="pricing" id="pricing">
-      <div class="section-label">TARIFS</div>
-      <h2 class="section-title">Simple et transparent</h2>
-      <p class="section-sub">Des Ewcoins qui s'adaptent à votre usage. Plus vous achetez, plus vous économisez.</p>
-
-      <div class="pricing-grid">
-        <div class="pricing-card">
-          <span class="badge badge-cyan">STARTER</span>
-          <div class="pricing-amount"><span>€</span>1.00</div>
-          <div class="pricing-coin">🪙 10 Ewcoins</div>
-          <ul class="pricing-features">
-            <li>1 Setup (10 Ewcoins)</li>
-            <li>Hébergez 1 script inclus</li>
-            <li>Sandbox Docker isolé</li>
-            <li>URL publique masquée</li>
-          </ul>
-          <button class="btn btn-secondary" style="width:100%" onclick="navigate('store')">Acheter</button>
-        </div>
-
-        <div class="pricing-card featured">
-          <span class="badge badge-violet" style="margin-top:16px;display:inline-flex">GROWTH</span>
-          <div class="pricing-amount"><span>€</span>5.00</div>
-          <div class="pricing-coin">🪙 50 Ewcoins</div>
-          <ul class="pricing-features">
-            <li>5 Setups (50 Ewcoins)</li>
-            <li>5 scripts hébergeables</li>
-            <li>Logs en temps réel</li>
-            <li>Variables d'environnement</li>
-            <li>Priorité de démarrage</li>
-          </ul>
-          <button class="btn btn-primary" style="width:100%" onclick="navigate('store')">Acheter</button>
-        </div>
-
-        <div class="pricing-card">
-          <span class="badge badge-amber">BUNDLE</span>
-          <div class="pricing-amount"><span>€</span>10.00</div>
-          <div class="pricing-coin">🪙 100 Ewcoins <span style="color:var(--green)">+10 bonus</span></div>
-          <ul class="pricing-features">
-            <li>5 Setups + 10 scripts</li>
-            <li>10 Ewcoins offerts</li>
-            <li>Support prioritaire</li>
-            <li>Stats avancées</li>
-            <li>Webhooks entrants</li>
-          </ul>
-          <button class="btn btn-secondary" style="width:100%" onclick="navigate('store')">Acheter</button>
-        </div>
-      </div>
-
-      <!-- Unit pricing -->
-      <div class="card card-p" style="margin-top:24px">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
-          <div>
-            <div style="font-size:14px;font-weight:700;margin-bottom:4px">Prix unitaires</div>
-            <div style="font-size:13px;color:var(--text-mid)">Ajoutez à la carte selon vos besoins</div>
-          </div>
-          <div style="display:flex;gap:24px;flex-wrap:wrap">
-            <div style="text-align:center">
-              <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--amber)">10 🪙</div>
-              <div style="font-size:12px;color:var(--text-dim);margin-top:2px">1 nouveau Setup</div>
-            </div>
-            <div style="text-align:center">
-              <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--amber)">1 🪙</div>
-              <div style="font-size:12px;color:var(--text-dim);margin-top:2px">+1 slot script</div>
-            </div>
-            <div style="text-align:center">
-              <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--cyan)">1 🪙 = 0.10€</div>
-              <div style="font-size:12px;color:var(--text-dim);margin-top:2px">taux fixe garanti</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Footer -->
-    <footer style="border-top:1px solid var(--border);padding:40px 0;margin-top:80px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
-      <div class="nav-logo" style="cursor:default">
-        <div class="nav-logo-icon">⚡</div>EwHost
-      </div>
-      <div style="font-size:13px;color:var(--text-dim);font-family:var(--mono)">
-        © 2025 EwHost · Propulsé par Cloudflare Workers · Docker Sandbox
-      </div>
-      <div style="display:flex;gap:16px;font-size:13px;color:var(--text-dim)">
-        <span style="cursor:pointer;hover:color:var(--text)">CGU</span>
-        <span>·</span>
-        <span style="cursor:pointer">Confidentialité</span>
-        <span>·</span>
-        <span style="cursor:pointer">Contact</span>
-      </div>
-    </footer>
-
+<section class="hero">
+  <div class="hero-tag">Plateforme d'hébergement de scripts</div>
+  <h1 class="hero-h1">Hébergez vos scripts.<br><em>H24, 7J/7.</em></h1>
+  <p class="hero-sub">Python, JavaScript, TypeScript — déployez en secondes dans des containers Docker isolés. Exécution continue, logs en temps réel, interface pro.</p>
+  <div class="hero-cta">
+    <button class="btn btn-primary btn-lg" onclick="go('auth');setMode('register')">Commencer gratuitement →</button>
+    <button class="btn btn-secondary btn-lg" onclick="goSection('pricing')">Voir les tarifs</button>
   </div>
+
+  <div class="hero-terminal">
+    <div class="term-hdr">
+      <div class="term-btn" style="background:#FF5F57"></div>
+      <div class="term-btn" style="background:#FFBD2E"></div>
+      <div class="term-btn" style="background:#28CA41"></div>
+      <span style="font-size:11px;color:var(--text2);margin-left:8px">ewhost ~ terminal</span>
+    </div>
+    <div class="term-body">
+      <div class="term-line"><span class="tp">$</span><span class="tc"> ewhost deploy bot.py --setup mon-projet</span></div>
+      <div class="term-line"><span class="to"> › Création du container Docker...</span></div>
+      <div class="term-line"><span class="to"> › Installation des dépendances...</span></div>
+      <div class="term-line"><span class="tg"> ✓ Déployé et actif H24</span></div>
+      <div class="term-line"><span class="tu"> → https://ewhost.io/run/mon-projet/bot</span></div>
+      <div class="term-line"><span class="tp">$</span><span class="tc"> <span style="animation:blink 1s step-end infinite">▋</span></span></div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-item"><div class="stat-n">H24</div><div class="stat-l">Uptime garanti</div></div>
+    <div class="stat-item"><div class="stat-n">Docker</div><div class="stat-l">Isolation totale</div></div>
+    <div class="stat-item"><div class="stat-n">&lt;2s</div><div class="stat-l">Démarrage</div></div>
+    <div class="stat-item"><div class="stat-n">Fly.io</div><div class="stat-l">Infrastructure</div></div>
+  </div>
+</section>
+
+<section style="padding:60px 0" id="features">
+  <div class="sec-lbl">Fonctionnalités</div>
+  <h2 class="sec-h">Tout ce qu'il vous faut</h2>
+  <p class="sec-sub">Une infrastructure complète pour héberger et exécuter vos scripts sans vous soucier du serveur.</p>
+  <div class="feat-grid">
+    <div class="feat"><div class="feat-icon">🐳</div><div class="feat-t">Docker isolé</div><div class="feat-d">Chaque script tourne dans son propre container. Sécurité maximale, zéro interférence.</div></div>
+    <div class="feat"><div class="feat-icon">⚡</div><div class="feat-t">Exécution H24</div><div class="feat-d">Vos programmes tournent en continu sur Fly.io. Redémarrage automatique en cas de crash.</div></div>
+    <div class="feat"><div class="feat-icon">📝</div><div class="feat-t">Éditeur intégré</div><div class="feat-d">Modifiez votre code directement dans l'interface. Sauvegarde et redéploiement en un clic.</div></div>
+    <div class="feat"><div class="feat-icon">📊</div><div class="feat-t">Logs temps réel</div><div class="feat-d">Suivez l'output de vos scripts en direct. Historique complet des exécutions.</div></div>
+    <div class="feat"><div class="feat-icon">🔒</div><div class="feat-t">Variables d'env</div><div class="feat-d">Stockez vos clés API en sécurité. Jamais exposées, injectées au runtime.</div></div>
+    <div class="feat"><div class="feat-icon">🪙</div><div class="feat-t">Pay as you go</div><div class="feat-d">1 Ewcoin = 0.10€. Achetez uniquement ce dont vous avez besoin. Aucun abonnement.</div></div>
+  </div>
+</section>
+
+<section style="padding:60px 0" id="pricing">
+  <div class="sec-lbl">Tarifs</div>
+  <h2 class="sec-h">Simple et transparent</h2>
+  <p class="sec-sub">Des Ewcoins qui s'adaptent à votre usage.</p>
+  <div class="store-grid" style="margin-top:32px">
+    <div class="pack">
+      <div class="pack-top"></div>
+      <div class="pack-name">Starter</div>
+      <div class="pack-coins">10 <span style="font-size:16px;color:var(--amber)">🪙</span></div>
+      <div class="pack-price">1.00 €</div>
+      <ul class="pack-items">
+        <li>1 Setup</li><li>1 slot script</li><li>Docker isolé</li>
+      </ul>
+      <button class="btn btn-secondary" style="width:100%" onclick="go('store')">Acheter</button>
+    </div>
+    <div class="pack featured">
+      <div class="pack-top"></div>
+      <div class="pack-name">Growth <span class="badge badge-green" style="margin-left:6px">Populaire</span></div>
+      <div class="pack-coins">50 <span style="font-size:16px;color:var(--amber)">🪙</span></div>
+      <div class="pack-price">5.00 €</div>
+      <ul class="pack-items">
+        <li>5 Setups</li><li>5 slots scripts</li><li>Logs temps réel</li><li>Variables d'env</li>
+      </ul>
+      <button class="btn btn-primary" style="width:100%" onclick="go('store')">Acheter</button>
+    </div>
+    <div class="pack">
+      <div class="pack-top"></div>
+      <div class="pack-name">Bundle</div>
+      <div class="pack-coins">110 <span style="font-size:16px;color:var(--amber)">🪙</span></div>
+      <div class="pack-price">10.00 € <span style="color:var(--green);font-size:10px">+10 offerts</span></div>
+      <ul class="pack-items">
+        <li>5 Setups + 10 scripts</li><li>10 Ewcoins bonus</li><li>Support prioritaire</li>
+      </ul>
+      <button class="btn btn-secondary" style="width:100%" onclick="go('store')">Acheter</button>
+    </div>
+  </div>
+  <div class="card card-p" style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+    <div style="font-size:12px;color:var(--text2)">Prix unitaires</div>
+    <div style="display:flex;gap:28px;flex-wrap:wrap">
+      <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--amber)">10 🪙</div><div style="font-size:10px;color:var(--text2);margin-top:2px">1 Setup</div></div>
+      <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--amber)">1 🪙</div><div style="font-size:10px;color:var(--text2);margin-top:2px">+1 slot script</div></div>
+      <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--green)">1 🪙 = 0.10€</div><div style="font-size:10px;color:var(--text2);margin-top:2px">taux fixe</div></div>
+    </div>
+  </div>
+</section>
+
+<footer style="border-top:1px solid var(--border);padding:32px 0;margin-top:60px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+  <div class="nav-logo" style="cursor:default"><div class="nav-logo-dot"></div>EwHost</div>
+  <div style="font-size:11px;color:var(--text2)">© 2025 EwHost · Cloudflare Workers · Fly.io · Docker</div>
+  <div style="display:flex;gap:16px;font-size:11px;color:var(--text2)">
+    <span style="cursor:pointer">CGU</span><span>·</span><span style="cursor:pointer">Contact</span>
+  </div>
+</footer>
+</div>
 </div>
 
-<!-- ═══════════════════ AUTH ═══════════════════ -->
+<!-- ══════════════ AUTH ══════════════ -->
 <div id="page-auth" class="page">
-  <div class="container">
-    <div class="auth-box fade-up">
-      <div class="auth-logo">
-        <div class="nav-logo-icon" style="margin:0 auto;width:44px;height:44px;font-size:22px">⚡</div>
+<div class="container">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-mark">EW</div>
+      <div class="auth-h" id="auth-h">Connexion</div>
+      <div class="auth-sub" id="auth-sub">Accédez à votre espace EwHost</div>
+    </div>
+    <div class="auth-form">
+      <input type="text" name="website" class="honeypot" tabindex="-1" autocomplete="off">
+      <div class="input-grp" id="ag-name" style="display:none">
+        <label class="input-lbl">Pseudo</label>
+        <input type="text" class="input" id="a-username" placeholder="monpseudo">
       </div>
-      <h2 class="auth-title" id="auth-title">Connexion</h2>
-      <p class="auth-sub" id="auth-sub">Accédez à votre espace EwHost</p>
-
-      <div class="auth-form" id="auth-form">
-        <!-- Honeypot field — les bots le remplissent, les humains ne le voient pas -->
-        <input type="text" name="username" class="ew-field-username" tabindex="-1" autocomplete="off">
-
-        <div class="input-group" id="auth-name-group" style="display:none">
-          <label class="input-label">Nom d'utilisateur</label>
-          <input type="text" class="input" id="auth-username" placeholder="monpseudo" autocomplete="username">
-        </div>
-        <div class="input-group">
-          <label class="input-label">Adresse email</label>
-          <input type="email" class="input" id="auth-email" placeholder="vous@exemple.com" autocomplete="email">
-        </div>
-        <div class="input-group">
-          <label class="input-label">Mot de passe</label>
-          <input type="password" class="input" id="auth-password" placeholder="••••••••" autocomplete="current-password">
-        </div>
-        <div class="input-group" id="auth-confirm-group" style="display:none">
-          <label class="input-label">Confirmer le mot de passe</label>
-          <input type="password" class="input" id="auth-confirm" placeholder="••••••••">
-        </div>
-
-        <button class="btn btn-primary" style="width:100%;margin-top:8px" id="auth-submit-btn" onclick="submitAuth()">
-          <span id="auth-btn-text">Se connecter</span>
-          <div class="spinner" id="auth-spinner" style="display:none"></div>
-        </button>
-
-        <div class="auth-divider">ou</div>
-
-        <button class="btn btn-secondary" style="width:100%" onclick="loginDemo()">
-          ⚡ Essai démo (sans compte)
-        </button>
+      <div class="input-grp">
+        <label class="input-lbl">Email</label>
+        <input type="email" class="input" id="a-email" placeholder="vous@exemple.com">
       </div>
-
-      <div class="auth-switch" id="auth-switch">
-        Pas encore de compte ?
-        <a onclick="setAuthMode('register')">Créer un compte</a>
+      <div class="input-grp">
+        <label class="input-lbl">Mot de passe</label>
+        <input type="password" class="input" id="a-pass" placeholder="••••••••">
       </div>
+      <div class="input-grp" id="ag-conf" style="display:none">
+        <label class="input-lbl">Confirmer</label>
+        <input type="password" class="input" id="a-conf" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:4px" id="a-btn" onclick="submitAuth()">
+        <span id="a-btn-txt">Se connecter</span>
+        <div class="spin" id="a-spin" style="display:none"></div>
+      </button>
+      <div class="auth-sep">ou</div>
+      <button class="btn btn-secondary" style="width:100%" onclick="demoLogin()">⚡ Essai démo</button>
+    </div>
+    <div class="auth-sw" id="auth-sw">
+      Pas de compte ? <a onclick="setMode('register')">Créer un compte</a>
     </div>
   </div>
 </div>
+</div>
 
-<!-- ═══════════════════ DASHBOARD ═══════════════════ -->
+<!-- ══════════════ DASHBOARD ══════════════ -->
 <div id="page-dashboard" class="page">
-  <div class="container">
-    <div class="dash-header flex-between">
-      <div>
-        <div class="dash-welcome">Bonjour, <span id="dash-username">Utilisateur</span> 👋</div>
-        <div class="dash-sub">Gérez vos setups et scripts depuis votre espace.</div>
-      </div>
-      <div class="coin-display">
-        <span class="coin-icon">🪙</span>
-        <span id="dash-coins">0</span> Ewcoins
-      </div>
+<div class="container">
+  <div class="dash-hdr flex-bc">
+    <div>
+      <div class="dash-hw">Bonjour, <span id="d-name">—</span> <span id="d-admin-badge"></span></div>
+      <div class="dash-sub">Gérez vos scripts depuis votre espace.</div>
     </div>
-
-    <!-- Stats -->
-    <div class="dash-stats">
-      <div class="stat-card">
-        <div class="stat-label">Setups</div>
-        <div class="stat-value" id="stat-setups">0</div>
-        <div class="stat-sub">/ <span id="stat-setups-max">0</span> disponibles</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Scripts hébergés</div>
-        <div class="stat-value" id="stat-scripts">0</div>
-        <div class="stat-sub">/ <span id="stat-scripts-max">0</span> slots</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Scripts actifs</div>
-        <div class="stat-value" id="stat-active" style="color:var(--green)">0</div>
-        <div class="stat-sub">en cours d'exécution</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Ewcoins</div>
-        <div class="stat-value" style="color:var(--amber)" id="stat-coins">0</div>
-        <div class="stat-sub"><a style="color:var(--violet-l);cursor:pointer" onclick="navigate('store')">Recharger →</a></div>
-      </div>
-    </div>
-
-    <!-- Setups -->
-    <div class="setups-header">
-      <div class="setups-title">Mes Setups</div>
-      <button class="btn btn-primary btn-sm" onclick="openCreateSetup()">+ Nouveau Setup</button>
-    </div>
-
-    <div id="setups-list"></div>
+    <div class="coin" id="d-coin">0 🪙</div>
   </div>
+
+  <div class="dash-stats">
+    <div class="ds"><div class="ds-lbl">Setups actifs</div><div class="ds-val" id="ds-setups">0</div></div>
+    <div class="ds"><div class="ds-lbl">Scripts hébergés</div><div class="ds-val" id="ds-scripts">0</div></div>
+    <div class="ds"><div class="ds-lbl">En exécution</div><div class="ds-val" id="ds-running" style="color:var(--green)">0</div></div>
+    <div class="ds"><div class="ds-lbl">Ewcoins</div><div class="ds-val" id="ds-coins" style="color:var(--amber)">0</div><div class="ds-sub"><a style="color:var(--green);cursor:pointer;font-size:11px" onclick="go('store')">Recharger →</a></div></div>
+  </div>
+
+  <div class="sec-hdr">
+    <div class="sec-ttl">Mes Setups</div>
+    <button class="btn btn-primary btn-sm" onclick="openNewSetup()">+ Nouveau Setup</button>
+  </div>
+  <div id="setups-list"></div>
+</div>
 </div>
 
-<!-- ═══════════════════ SETUP DETAIL ═══════════════════ -->
+<!-- ══════════════ SETUP DETAIL ══════════════ -->
 <div id="page-setup" class="page">
-  <div class="container">
-    <div class="setup-detail-header">
-      <div class="breadcrumb" onclick="navigate('dashboard')">
-        ← Dashboard / <span id="setup-detail-name">Setup</span>
-      </div>
-      <div class="flex-between">
-        <div>
-          <h2 id="setup-detail-title" style="font-size:24px;font-weight:800;margin-bottom:4px"></h2>
-          <div id="setup-detail-meta" style="font-size:13px;font-family:var(--mono);color:var(--text-dim)"></div>
-        </div>
-        <div style="display:flex;gap:10px;align-items:center">
-          <div class="coin-display">
-            <span>🪙</span>
-            <span id="setup-coins">0</span>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="openAddScript()">+ Ajouter un script</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- URL bar -->
-    <div class="url-bar" id="setup-url-bar">
-      <span class="url-bar-icon">●</span>
-      <span class="url-text" id="setup-url-text">https://run.ewhost.io/s/...</span>
-      <button class="url-copy-btn" onclick="copySetupUrl()">📋</button>
-    </div>
-
-    <div style="margin-top:32px">
-      <div style="font-size:16px;font-weight:700;margin-bottom:16px">Scripts</div>
-      <div id="scripts-list"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════ STORE ═══════════════════ -->
-<div id="page-store" class="page">
-  <div class="container">
-    <div class="store-header flex-between">
+<div class="container">
+  <div class="setup-hdr">
+    <div class="breadcrumb" onclick="go('dashboard')">← Dashboard / <span id="sd-name">—</span></div>
+    <div class="flex-bc">
       <div>
-        <h2 style="font-size:28px;font-weight:800;margin-bottom:4px">Boutique Ewcoins</h2>
-        <p style="font-size:14px;color:var(--text-mid)">Achetez des Ewcoins pour débloquer setups et scripts</p>
+        <div style="font-size:20px;font-weight:900;letter-spacing:-0.03em;margin-bottom:2px" id="sd-title">—</div>
+        <div style="font-size:12px;color:var(--text2)" id="sd-meta">—</div>
       </div>
-      <div class="coin-display">
-        <span class="coin-icon">🪙</span>
-        Solde : <span id="store-coins">0</span>
-      </div>
-    </div>
-
-    <!-- Packs -->
-    <div style="font-family:var(--mono);font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px">PACKS DISPONIBLES</div>
-    <div class="store-packs" id="store-packs">
-
-      <div class="pack-card" onclick="selectPack(this, 'starter', 10, 1.00)">
-        <span class="badge badge-cyan">STARTER</span>
-        <div class="pack-amount">10</div>
-        <div style="color:var(--amber);font-family:var(--mono);font-size:13px;margin-bottom:4px">🪙 Ewcoins</div>
-        <div class="pack-euro">1.00 €</div>
-        <div class="pack-what">
-          <div class="pack-what-item">1 Setup (10 Ewcoins)</div>
-          <div class="pack-what-item">Slot 1 script inclus</div>
-        </div>
-        <button class="btn btn-secondary" style="width:100%;margin-top:8px">Sélectionner</button>
-      </div>
-
-      <div class="pack-card" onclick="selectPack(this, 'growth', 50, 5.00)" style="border-color:var(--violet)">
-        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--violet),var(--cyan));border-radius:var(--r-lg) var(--r-lg) 0 0"></div>
-        <span class="badge badge-violet" style="margin-top:8px">POPULAIRE</span>
-        <div class="pack-amount">50</div>
-        <div style="color:var(--amber);font-family:var(--mono);font-size:13px;margin-bottom:4px">🪙 Ewcoins</div>
-        <div class="pack-euro">5.00 € <span style="color:var(--green);font-size:11px">(économisez 0€)</span></div>
-        <div class="pack-what">
-          <div class="pack-what-item">5 Setups</div>
-          <div class="pack-what-item">5 slots scripts</div>
-          <div class="pack-what-item">Logs temps réel</div>
-        </div>
-        <button class="btn btn-primary" style="width:100%;margin-top:8px">Sélectionner</button>
-      </div>
-
-      <div class="pack-card" onclick="selectPack(this, 'bundle', 110, 10.00)">
-        <span class="badge badge-amber">BUNDLE</span>
-        <div class="pack-amount">110</div>
-        <div style="color:var(--amber);font-family:var(--mono);font-size:13px;margin-bottom:4px">🪙 Ewcoins <span style="color:var(--green)">+10 offerts</span></div>
-        <div class="pack-euro">10.00 €</div>
-        <div class="pack-what">
-          <div class="pack-what-item">5 Setups + 10 scripts</div>
-          <div class="pack-what-item">10 Ewcoins bonus</div>
-          <div class="pack-what-item">Support prioritaire</div>
-        </div>
-        <button class="btn btn-secondary" style="width:100%;margin-top:8px">Sélectionner</button>
-      </div>
-
-    </div>
-
-    <!-- Méthode de paiement -->
-    <div id="payment-section" style="display:none">
-      <div style="font-family:var(--mono);font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px">MÉTHODE DE PAIEMENT</div>
-      <div style="display:flex;gap:12px;margin-bottom:20px">
-        <div class="payment-method selected" id="pm-stripe" onclick="selectPayment('stripe')">
-          <div class="payment-logo">💳</div>
-          <div class="payment-name">Carte bancaire</div>
-          <div style="font-size:11px;color:var(--text-dim);margin-top:4px;font-family:var(--mono)">via Stripe</div>
-        </div>
-        <div class="payment-method" id="pm-paypal" onclick="selectPayment('paypal')">
-          <div class="payment-logo">🅿️</div>
-          <div class="payment-name">PayPal</div>
-          <div style="font-size:11px;color:var(--text-dim);margin-top:4px;font-family:var(--mono)">Redirection PayPal</div>
-        </div>
-      </div>
-
-      <div class="card card-p" id="order-summary">
-        <div style="font-size:14px;font-weight:700;margin-bottom:16px">Récapitulatif</div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px">
-          <span style="color:var(--text-mid)" id="order-desc">Pack Starter</span>
-          <span class="coin-display" id="order-coins" style="padding:2px 8px;font-size:12px">10 🪙</span>
-        </div>
-        <div class="divider" style="margin:12px 0"></div>
-        <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:700">
-          <span>Total</span>
-          <span id="order-price">1.00 €</span>
-        </div>
-        <button class="btn btn-primary" style="width:100%;margin-top:20px" id="checkout-btn" onclick="checkout()">
-          <span id="checkout-btn-text">Payer maintenant →</span>
-          <div class="spinner" id="checkout-spinner" style="display:none"></div>
-        </button>
-        <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--text-dim);font-family:var(--mono)">
-          🔒 Paiement sécurisé · PCI DSS · SSL
-        </div>
-      </div>
-    </div>
-
-    <!-- Historique -->
-    <div style="margin-top:48px">
-      <div style="font-family:var(--mono);font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px">HISTORIQUE DES ACHATS</div>
-      <div id="purchase-history">
-        <div style="text-align:center;padding:32px;color:var(--text-dim);font-family:var(--mono);font-size:13px">
-          Aucun achat pour le moment.
-        </div>
+      <div class="flex-c gap12">
+        <div class="coin" id="sd-coin">0 🪙</div>
+        <button class="btn btn-primary btn-sm" onclick="openAddScript()">+ Script</button>
+        <button class="btn btn-secondary btn-sm" onclick="openSetupSettings()">⚙ Paramètres</button>
       </div>
     </div>
   </div>
+  <div id="scripts-list"></div>
+</div>
 </div>
 
-<!-- ═══════════════════ MODALS ═══════════════════ -->
+<!-- ══════════════ STORE ══════════════ -->
+<div id="page-store" class="page">
+<div class="container">
+  <div class="dash-hdr flex-bc">
+    <div>
+      <div class="dash-hw">Boutique</div>
+      <div class="dash-sub">Achetez des Ewcoins pour débloquer setups et scripts.</div>
+    </div>
+    <div class="coin" id="store-coin">0 🪙</div>
+  </div>
 
-<!-- Create Setup Modal -->
-<div class="modal-overlay" id="modal-create-setup">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">Créer un nouveau Setup</div>
-      <button class="modal-close" onclick="closeModal('modal-create-setup')">✕</button>
+  <div class="sec-lbl" style="margin-bottom:16px">Choisir un pack</div>
+  <div class="store-grid" id="store-packs">
+    <div class="pack" onclick="selPack(this,'starter',10,1.00)">
+      <div class="pack-top"></div>
+      <div class="pack-name">Starter</div>
+      <div class="pack-coins">10 <span style="font-size:14px">🪙</span></div>
+      <div class="pack-price">1.00 €</div>
+      <ul class="pack-items"><li>1 Setup</li><li>1 slot script</li></ul>
+      <button class="btn btn-secondary btn-sm" style="width:100%">Sélectionner</button>
     </div>
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">
-      <div style="font-size:13px;color:var(--text-mid)">Coût : <strong style="color:var(--amber)">10 Ewcoins</strong></div>
-      <div class="coin-display" style="font-size:12px;padding:4px 10px">
-        Solde : <span id="modal-coins-display">0</span> 🪙
-      </div>
+    <div class="pack featured" onclick="selPack(this,'growth',50,5.00)">
+      <div class="pack-top"></div>
+      <div class="pack-name">Growth <span class="badge badge-green" style="margin-left:6px">Populaire</span></div>
+      <div class="pack-coins">50 <span style="font-size:14px">🪙</span></div>
+      <div class="pack-price">5.00 €</div>
+      <ul class="pack-items"><li>5 Setups</li><li>5 slots scripts</li><li>Logs live</li></ul>
+      <button class="btn btn-primary btn-sm" style="width:100%">Sélectionner</button>
     </div>
-    <div style="display:flex;flex-direction:column;gap:16px">
-      <div class="input-group">
-        <label class="input-label">Nom du setup</label>
-        <input type="text" class="input" id="new-setup-name" placeholder="Mon projet bot" maxlength="32">
-      </div>
-      <div class="input-group">
-        <label class="input-label">Description (optionnel)</label>
-        <input type="text" class="input" id="new-setup-desc" placeholder="Description courte..." maxlength="80">
-      </div>
-      <div class="input-group">
-        <label class="input-label">Emoji (optionnel)</label>
-        <input type="text" class="input" id="new-setup-emoji" placeholder="🤖" maxlength="2" style="font-size:20px;width:80px">
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-create-setup')">Annuler</button>
-      <button class="btn btn-primary" onclick="createSetup()">Créer le Setup (10 🪙)</button>
+    <div class="pack" onclick="selPack(this,'bundle',110,10.00)">
+      <div class="pack-top"></div>
+      <div class="pack-name">Bundle</div>
+      <div class="pack-coins">110 <span style="font-size:14px">🪙</span></div>
+      <div class="pack-price">10.00 € <span style="color:var(--green);font-size:10px">+10 offerts</span></div>
+      <ul class="pack-items"><li>5 Setups + 10 scripts</li><li>10 bonus</li></ul>
+      <button class="btn btn-secondary btn-sm" style="width:100%">Sélectionner</button>
     </div>
   </div>
+
+  <div id="pay-section" style="display:none;margin-top:24px">
+    <div class="sec-lbl" style="margin-bottom:12px">Méthode de paiement</div>
+    <div class="pay-methods">
+      <div class="pay-method sel" id="pm-stripe" onclick="selPay('stripe')">
+        <div class="pay-icon">💳</div>
+        <div class="pay-name">Carte bancaire</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:2px">via Stripe</div>
+      </div>
+      <div class="pay-method" id="pm-paypal" onclick="selPay('paypal')">
+        <div class="pay-icon">🅿️</div>
+        <div class="pay-name">PayPal</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:2px">Redirection PayPal</div>
+      </div>
+    </div>
+    <div class="card card-p">
+      <div style="font-size:12px;font-weight:700;margin-bottom:14px">Récapitulatif</div>
+      <div class="flex-bc" style="margin-bottom:8px;font-size:13px">
+        <span style="color:var(--text2)" id="pay-desc">—</span>
+        <span class="coin" id="pay-coins" style="font-size:11px;padding:2px 8px">—</span>
+      </div>
+      <div class="divider" style="margin:12px 0"></div>
+      <div class="flex-bc" style="font-size:16px;font-weight:700">
+        <span>Total</span><span id="pay-price">—</span>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:16px" id="pay-btn" onclick="checkout()">
+        <span id="pay-btn-txt">Payer →</span>
+        <div class="spin" id="pay-spin" style="display:none"></div>
+      </button>
+      <div style="text-align:center;margin-top:10px;font-size:10px;color:var(--text2)">🔒 Paiement sécurisé · SSL · PCI DSS</div>
+    </div>
+  </div>
+
+  <div style="margin-top:40px">
+    <div class="sec-lbl" style="margin-bottom:14px">Historique</div>
+    <div id="purchase-hist"><div style="font-size:12px;color:var(--text2);padding:20px 0">Aucun achat.</div></div>
+  </div>
+</div>
 </div>
 
-<!-- Add Script Modal -->
-<div class="modal-overlay" id="modal-add-script">
-  <div class="modal" style="max-width:600px">
-    <div class="modal-header">
-      <div class="modal-title">Ajouter un script</div>
-      <button class="modal-close" onclick="closeModal('modal-add-script')">✕</button>
+<!-- ══════════════ ADMIN ══════════════ -->
+<div id="page-admin" class="page">
+<div class="container">
+  <div class="dash-hdr flex-bc">
+    <div>
+      <div class="dash-hw">Panel Admin <span class="badge badge-admin" style="margin-left:8px;vertical-align:middle">ADMIN</span></div>
+      <div class="dash-sub">Gérez les utilisateurs et la configuration de la plateforme.</div>
     </div>
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">
-      <div style="font-size:13px;color:var(--text-mid)">Coût : <strong style="color:var(--amber)">1 Ewcoin</strong> (slot script)</div>
-      <div class="coin-display" style="font-size:12px;padding:4px 10px">
-        Solde : <span id="modal-coins-script">0</span> 🪙
-      </div>
+  </div>
+
+  <div class="admin-grid">
+    <div class="admin-section">
+      <div class="admin-sec-t">Utilisateurs</div>
+      <div id="admin-users"><div style="font-size:12px;color:var(--text2)">Chargement...</div></div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:16px">
-      <div class="input-group">
-        <label class="input-label">Nom du script</label>
-        <input type="text" class="input" id="new-script-name" placeholder="mon_script.py" maxlength="64">
-      </div>
-      <div class="input-group">
-        <label class="input-label">Langage</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap" id="lang-selector">
-          <button class="btn btn-sm lang-btn active" data-lang="python" onclick="selectLang(this,'python')">🐍 Python</button>
-          <button class="btn btn-sm lang-btn" data-lang="javascript" onclick="selectLang(this,'javascript')">⚡ JavaScript</button>
-          <button class="btn btn-sm lang-btn" data-lang="typescript" onclick="selectLang(this,'typescript')">🔷 TypeScript</button>
-          <button class="btn btn-sm lang-btn" data-lang="bash" onclick="selectLang(this,'bash')">🖥 Bash</button>
+    <div class="admin-section">
+      <div class="admin-sec-t">Configuration plateforme</div>
+      <div class="config-row">
+        <span class="config-key">Prix Setup (Ewcoins)</span>
+        <div class="flex-c gap8">
+          <input type="number" class="input" id="cfg-setup-price" style="width:70px;padding:4px 8px" value="10">
+          <button class="btn btn-sm btn-secondary" onclick="saveCfg('setup_price', document.getElementById('cfg-setup-price').value)">OK</button>
         </div>
       </div>
-      <div class="input-group">
-        <label class="input-label">Code source</label>
-        <textarea class="input" id="new-script-code" placeholder="# Votre code ici...
-print('Hello EwHost!')"></textarea>
+      <div class="config-row">
+        <span class="config-key">Prix Script (Ewcoins)</span>
+        <div class="flex-c gap8">
+          <input type="number" class="input" id="cfg-script-price" style="width:70px;padding:4px 8px" value="1">
+          <button class="btn btn-sm btn-secondary" onclick="saveCfg('script_price', document.getElementById('cfg-script-price').value)">OK</button>
+        </div>
       </div>
-      <div class="input-group">
-        <label class="input-label">Variables d'environnement (optionnel)</label>
-        <textarea class="input" id="new-script-env" placeholder="API_KEY=valeur&#10;SECRET=autre" style="min-height:72px"></textarea>
+      <div class="config-row">
+        <span class="config-key">Nom de la plateforme</span>
+        <div class="flex-c gap8">
+          <input type="text" class="input" id="cfg-name" style="width:120px;padding:4px 8px" value="EwHost">
+          <button class="btn btn-sm btn-secondary" onclick="saveCfg('platform_name', document.getElementById('cfg-name').value)">OK</button>
+        </div>
+      </div>
+      <div class="config-row">
+        <span class="config-key">Inscription ouverte</span>
+        <button class="btn btn-sm btn-secondary" id="cfg-reg" onclick="toggleCfg('registration_open')">ON</button>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-add-script')">Annuler</button>
-      <button class="btn btn-primary" onclick="addScript()">Déployer (1 🪙)</button>
+  </div>
+
+  <div class="admin-section" style="margin-top:16px">
+    <div class="admin-sec-t">Donner des Ewcoins à un utilisateur</div>
+    <div class="flex-c gap12" style="flex-wrap:wrap">
+      <input type="email" class="input" id="admin-email" placeholder="email@exemple.com" style="max-width:260px">
+      <input type="number" class="input" id="admin-coins" placeholder="100" style="max-width:100px">
+      <button class="btn btn-primary btn-sm" onclick="adminGiveCoins()">Créditer</button>
+      <button class="btn btn-secondary btn-sm" onclick="adminToggleAdmin()">Toggle Admin</button>
     </div>
   </div>
 </div>
+</div>
 
-<!-- Toast container -->
-<div id="toast-container"></div>
+<!-- ══════════════ MODALS ══════════════ -->
 
-<!-- ═══════════════════ SCRIPT ═══════════════════ -->
-<style>
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-</style>
+<!-- New Setup -->
+<div class="modal-bg" id="m-setup">
+<div class="modal">
+  <div class="modal-hdr">
+    <div class="modal-ttl">Nouveau Setup</div>
+    <button class="modal-close" onclick="closeM('m-setup')">✕</button>
+  </div>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:16px;font-size:12px;color:var(--text2)">
+    Coût : <strong style="color:var(--amber)" id="m-setup-price">10 Ewcoins</strong> · Solde : <span id="m-setup-bal">0</span> 🪙
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="input-grp"><label class="input-lbl">Nom</label><input type="text" class="input" id="ns-name" placeholder="mon-projet" maxlength="32"></div>
+    <div class="input-grp"><label class="input-lbl">Description</label><input type="text" class="input" id="ns-desc" placeholder="Description..." maxlength="80"></div>
+    <div class="input-grp"><label class="input-lbl">Emoji</label><input type="text" class="input" id="ns-emoji" placeholder="🤖" maxlength="2" style="width:64px;font-size:18px"></div>
+  </div>
+  <div class="modal-ftr">
+    <button class="btn btn-ghost" onclick="closeM('m-setup')">Annuler</button>
+    <button class="btn btn-primary" onclick="createSetup()">Créer →</button>
+  </div>
+</div>
+</div>
+
+<!-- Add/Edit Script -->
+<div class="modal-bg" id="m-script">
+<div class="modal modal-lg">
+  <div class="modal-hdr">
+    <div class="modal-ttl" id="m-script-ttl">Nouveau script</div>
+    <button class="modal-close" onclick="closeM('m-script')">✕</button>
+  </div>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:16px;font-size:12px;color:var(--text2)" id="m-script-cost-bar">
+    Coût : <strong style="color:var(--amber)" id="m-script-price">1 Ewcoin</strong> · Solde : <span id="m-script-bal">0</span> 🪙
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="flex-c gap12">
+      <div class="input-grp" style="flex:1"><label class="input-lbl">Nom du fichier</label><input type="text" class="input" id="sc-name" placeholder="mon_script.py" maxlength="64"></div>
+      <div class="input-grp">
+        <label class="input-lbl">Langage</label>
+        <div class="flex-c gap6" id="lang-btns">
+          <button class="btn btn-sm lang-btn on" data-lang="python" onclick="selLang(this,'python')">Python</button>
+          <button class="btn btn-sm lang-btn" data-lang="javascript" onclick="selLang(this,'javascript')">JS</button>
+          <button class="btn btn-sm lang-btn" data-lang="typescript" onclick="selLang(this,'typescript')">TS</button>
+        </div>
+      </div>
+    </div>
+    <div class="input-grp">
+      <label class="input-lbl">Code source</label>
+      <div class="editor-wrap">
+        <div class="editor-topbar">
+          <span class="editor-lang" id="ed-lang">python</span>
+          <span style="font-size:10px;color:var(--text2)">Tab = 2 espaces</span>
+        </div>
+        <textarea class="editor-textarea" id="sc-code" placeholder="# Votre code ici...&#10;print('Hello EwHost!')"></textarea>
+      </div>
+    </div>
+    <div class="input-grp">
+      <label class="input-lbl">Variables d'environnement</label>
+      <textarea class="input" id="sc-env" placeholder="API_KEY=valeur&#10;TOKEN=secret" style="min-height:72px;font-size:11px"></textarea>
+    </div>
+  </div>
+  <div class="modal-ftr">
+    <button class="btn btn-ghost" onclick="closeM('m-script')">Annuler</button>
+    <button class="btn btn-primary" id="m-script-btn" onclick="saveScript()">Déployer →</button>
+  </div>
+</div>
+</div>
+
+<!-- Setup Settings -->
+<div class="modal-bg" id="m-setup-settings">
+<div class="modal">
+  <div class="modal-hdr">
+    <div class="modal-ttl">Paramètres du Setup</div>
+    <button class="modal-close" onclick="closeM('m-setup-settings')">✕</button>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="input-grp"><label class="input-lbl">Nom</label><input type="text" class="input" id="ss-name"></div>
+    <div class="input-grp"><label class="input-lbl">Description</label><input type="text" class="input" id="ss-desc"></div>
+    <div class="input-grp"><label class="input-lbl">Emoji</label><input type="text" class="input" id="ss-emoji" style="width:64px;font-size:18px"></div>
+  </div>
+  <div class="divider"></div>
+  <button class="btn btn-danger btn-sm" onclick="deleteSetup()">Supprimer ce setup</button>
+  <div class="modal-ftr">
+    <button class="btn btn-ghost" onclick="closeM('m-setup-settings')">Annuler</button>
+    <button class="btn btn-primary" onclick="saveSetupSettings()">Sauvegarder</button>
+  </div>
+</div>
+</div>
+
+<div id="toasts"></div>
+
 <script>
-// ═══════════════════════════════════════════════════
-//  CONFIG — remplacez par vos vraies clés
-// ═══════════════════════════════════════════════════
-const CONFIG = {
-  // Votre Cloudflare Worker URL
-  API_BASE: 'https://ewhost-api.capkychannel.workers.dev',
-  // Clé publique Stripe (pk_live_... ou pk_test_...)
-  STRIPE_PK: 'pk_test_51TU7CJGVcUGR1yKDSacCiezmYUHWUvtq9WLCegYyktdccFKog0QaSaJbgLW8seALEQs8Pl6pRAio8HFYqH4xO05s00c86eFzfh',
-  // ID du prix Stripe pour chaque pack (créés dans le dashboard Stripe)
-  STRIPE_PRICES: {
+// ══════════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════════
+const CFG = {
+  API:    'https://ewhost-api.capkychannel.workers.dev',
+  SPK:    'pk_test_51TU7CJGVcUGR1yKDSacCiezmYUHWUvtq9WLCegYyktdccFKog0QaSaJbgLW8seALEQs8Pl6pRAio8HFYqH4xO05s00c86eFzfh',
+  PRICES: {
     starter: 'price_1TUsK4GVcUGR1yKDUsHc1v1t',
     growth:  'price_1TUsKsGVcUGR1yKD7dZ7sAuS',
     bundle:  'price_1TUsLFGVcUGR1yKDdQBOHhMf',
   }
 };
 
-// ═══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 //  STATE
-// ═══════════════════════════════════════════════════
-const state = {
-  user:        null,
-  token:       localStorage.getItem('ewhost_token') || null,
-  setups:      [],
-  currentSetup: null,
-  selectedPack: null,
-  selectedPayment: 'stripe',
-  selectedLang: 'python',
+// ══════════════════════════════════════════════════
+const S = {
+  user:     null,
+  token:    localStorage.getItem('ewh_tok') || null,
+  setups:   [],
+  setup:    null,   // current setup detail
+  pack:     null,
+  payment:  'stripe',
+  lang:     'python',
+  editScript: null,  // null = new, id = edit
+  formTime: Date.now(),
 };
 
-// ═══════════════════════════════════════════════════
-//  ANTI-BOT — Honeypot + timing
-// ═══════════════════════════════════════════════════
-let _formLoadTime = Date.now();
-
-function checkHoneypot() {
-  const hp = document.querySelector('.ew-field-username');
-  if (hp && hp.value !== '') {
-    // Bot détecté — simuler une réponse OK sans rien faire
-    console.warn('[EwHost] Bot detected via honeypot');
-    return true;
-  }
-  // Soumission trop rapide = bot
-  if (Date.now() - _formLoadTime < 800) {
-    return true;
-  }
-  return false;
-}
-
-// ═══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 //  ROUTER
-// ═══════════════════════════════════════════════════
-function navigate(page) {
+// ══════════════════════════════════════════════════
+function go(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const el = document.getElementById('page-' + page);
   if (el) el.classList.add('active');
-
-  // Scroll top
-  window.scrollTo(0, 0);
-
-  // Update nav
-  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-
-  if (page === 'dashboard') renderDashboard();
-  if (page === 'setup')     renderSetupDetail();
+  window.scrollTo(0,0);
+  if (page === 'dashboard') renderDash();
+  if (page === 'setup')     renderSetup();
   if (page === 'store')     renderStore();
+  if (page === 'admin')     renderAdmin();
 }
 
-function scrollToSection(id) {
-  navigate('landing');
-  setTimeout(() => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 50);
+function goSection(id) {
+  go('landing');
+  setTimeout(() => document.getElementById(id)?.scrollIntoView({behavior:'smooth'}), 50);
 }
 
-// ═══════════════════════════════════════════════════
-//  API CLIENT — requêtes vers Cloudflare Worker
-// ═══════════════════════════════════════════════════
-async function api(method, path, body = null) {
-  const headers = { 'Content-Type': 'application/json' };
-  if (state.token) headers['Authorization'] = 'Bearer ' + state.token;
-
-  const opts = { method, headers };
-  if (body) opts.body = JSON.stringify(body);
-
-  try {
-    const res = await fetch(CONFIG.API_BASE + path, opts);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Erreur serveur');
-    return data;
-  } catch (e) {
-    throw e;
-  }
+// ══════════════════════════════════════════════════
+//  API
+// ══════════════════════════════════════════════════
+async function api(method, path, body) {
+  const h = {'Content-Type':'application/json'};
+  if (S.token) h['Authorization'] = 'Bearer ' + S.token;
+  const r = await fetch(CFG.API + path, {method, headers:h, body: body ? JSON.stringify(body) : undefined});
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || 'Erreur serveur');
+  return d;
 }
 
-// ═══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
+//  ANTI-BOT
+// ══════════════════════════════════════════════════
+function botCheck() {
+  const hp = document.querySelector('.honeypot');
+  if (hp?.value) return true;
+  if (Date.now() - S.formTime < 800) return true;
+  return false;
+}
+
+// ══════════════════════════════════════════════════
 //  AUTH
-// ═══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 let authMode = 'login';
 
-function setAuthMode(mode) {
-  authMode = mode;
-  _formLoadTime = Date.now();
-
-  const isRegister = mode === 'register';
-  document.getElementById('auth-title').textContent   = isRegister ? 'Créer un compte' : 'Connexion';
-  document.getElementById('auth-sub').textContent     = isRegister ? 'Rejoignez EwHost dès maintenant' : 'Accédez à votre espace EwHost';
-  document.getElementById('auth-btn-text').textContent = isRegister ? 'Créer mon compte' : 'Se connecter';
-  document.getElementById('auth-name-group').style.display    = isRegister ? 'flex' : 'none';
-  document.getElementById('auth-confirm-group').style.display = isRegister ? 'flex' : 'none';
-  document.getElementById('auth-switch').innerHTML = isRegister
-    ? 'Déjà un compte ? <a onclick="setAuthMode(\'login\')">Se connecter</a>'
-    : 'Pas encore de compte ? <a onclick="setAuthMode(\'register\')">Créer un compte</a>';
+function setMode(m) {
+  authMode = m; S.formTime = Date.now();
+  const reg = m === 'register';
+  document.getElementById('auth-h').textContent    = reg ? 'Créer un compte' : 'Connexion';
+  document.getElementById('auth-sub').textContent  = reg ? 'Rejoignez EwHost' : 'Accédez à votre espace';
+  document.getElementById('a-btn-txt').textContent = reg ? 'Créer mon compte' : 'Se connecter';
+  document.getElementById('ag-name').style.display = reg ? 'flex' : 'none';
+  document.getElementById('ag-conf').style.display = reg ? 'flex' : 'none';
+  document.getElementById('auth-sw').innerHTML = reg
+    ? 'Déjà un compte ? <a onclick="setMode(\'login\')">Connexion</a>'
+    : 'Pas de compte ? <a onclick="setMode(\'register\')">Créer un compte</a>';
 }
 
 async function submitAuth() {
-  if (checkHoneypot()) {
-    // Fausse réponse de succès pour les bots
-    showToast('Connexion réussie !', 'success');
-    return;
-  }
-
-  const email    = document.getElementById('auth-email').value.trim();
-  const password = document.getElementById('auth-password').value;
-
-  if (!email || !password) { showToast('Remplissez tous les champs', 'error'); return; }
-
-  setLoading('auth-submit-btn', 'auth-spinner', true);
-
+  if (botCheck()) { toast('ok','Connexion réussie !'); return; }
+  const email = document.getElementById('a-email').value.trim();
+  const pass  = document.getElementById('a-pass').value;
+  if (!email || !pass) { toast('err','Remplissez tous les champs'); return; }
+  loading('a-btn','a-spin',true);
   try {
-    let data;
+    let d;
     if (authMode === 'register') {
-      const username = document.getElementById('auth-username').value.trim();
-      const confirm  = document.getElementById('auth-confirm').value;
-      if (password !== confirm) { showToast('Les mots de passe ne correspondent pas', 'error'); return; }
-      if (!username)             { showToast('Choisissez un nom d\'utilisateur', 'error'); return; }
-      data = await api('POST', '/api/auth/register', { email, password, username });
+      const user = document.getElementById('a-username').value.trim();
+      const conf = document.getElementById('a-conf').value;
+      if (pass !== conf) { toast('err','Mots de passe différents'); return; }
+      if (!user) { toast('err','Choisissez un pseudo'); return; }
+      d = await api('POST','/api/auth/register',{email,password:pass,username:user});
     } else {
-      data = await api('POST', '/api/auth/login', { email, password });
+      d = await api('POST','/api/auth/login',{email,password:pass});
     }
-
-    state.token = data.token;
-    state.user  = data.user;
-    localStorage.setItem('ewhost_token', data.token);
-    onLogin();
-    showToast('Connexion réussie ! Bienvenue ' + data.user.username, 'success');
-    navigate('dashboard');
-  } catch (e) {
-    showToast(e.message, 'error');
-  } finally {
-    setLoading('auth-submit-btn', 'auth-spinner', false);
-  }
+    S.token = d.token; S.user = d.user; S.setups = d.setups || [];
+    localStorage.setItem('ewh_tok', d.token);
+    afterLogin();
+    toast('ok','Bienvenue ' + d.user.username + ' !');
+    go('dashboard');
+  } catch(e) { toast('err', e.message); }
+  finally { loading('a-btn','a-spin',false); }
 }
 
-function loginDemo() {
-  // Mode démo local (sans appel API)
-  state.user = {
-    id: 'demo',
-    username: 'DemoUser',
-    email: 'demo@ewhost.io',
-    coins: 45,
-    setupSlots: 2,
-    scriptSlots: 5,
-  };
-  state.token = 'demo_token';
-  state.setups = [
-    { id: 's1', name: 'Mon Bot Discord', emoji: '🤖', desc: 'Bot de modération', scripts: 2, maxScripts: 3, createdAt: '2025-01-15', status: 'active' },
-    { id: 's2', name: 'Scraper Data',    emoji: '🕷️', desc: 'Collecte de données', scripts: 1, maxScripts: 2, createdAt: '2025-02-01', status: 'active' },
+function demoLogin() {
+  S.user = {id:'demo',username:'Demo',email:'demo@ewhost.io',coins:50,is_admin:false};
+  S.token = 'demo';
+  S.setups = [
+    {id:'s1',name:'Mon Bot',emoji:'🤖',desc:'Bot Discord',script_count:1,status:'active',createdAt:'2025-05-01'},
   ];
-  onLogin();
-  showToast('Mode démo activé', 'info');
-  navigate('dashboard');
+  afterLogin();
+  toast('info','Mode démo activé');
+  go('dashboard');
 }
 
-function onLogin() {
-  document.getElementById('nav-dashboard').style.display = '';
-  document.getElementById('nav-store').style.display     = '';
+function afterLogin() {
+  document.getElementById('nl-dash').style.display = '';
+  document.getElementById('nl-store').style.display = '';
+  if (S.user.is_admin) document.getElementById('nl-admin').style.display = '';
+  const inf = S.user.is_admin ? '∞' : S.user.coins;
   document.getElementById('nav-right').innerHTML = `
-    <div class="coin-display" style="cursor:pointer" onclick="navigate('store')">
-      <span>🪙</span> <span id="nav-coins">${state.user.coins}</span>
-    </div>
-    <button class="btn btn-ghost btn-sm" onclick="logout()">Déconnexion</button>
-  `;
+    <div class="coin" style="cursor:pointer" onclick="go('store')">🪙 <span id="nav-coins">${inf}</span></div>
+    <button class="btn btn-ghost btn-sm" onclick="logout()">Déconnexion</button>`;
 }
 
 function logout() {
-  state.token = null;
-  state.user  = null;
-  localStorage.removeItem('ewhost_token');
-  document.getElementById('nav-dashboard').style.display = 'none';
-  document.getElementById('nav-store').style.display     = 'none';
+  S.token = null; S.user = null;
+  localStorage.removeItem('ewh_tok');
+  ['nl-dash','nl-store','nl-admin'].forEach(id => document.getElementById(id).style.display='none');
   document.getElementById('nav-right').innerHTML = `
-    <button class="btn btn-ghost btn-sm" onclick="navigate('auth'); setAuthMode('login')">Connexion</button>
-    <button class="btn btn-primary btn-sm" onclick="navigate('auth'); setAuthMode('register')">Commencer →</button>
-  `;
-  navigate('landing');
-  showToast('Déconnecté', 'info');
+    <button class="btn btn-ghost btn-sm" onclick="go('auth');setMode('login')">Connexion</button>
+    <button class="btn btn-primary btn-sm" onclick="go('auth');setMode('register')">Démarrer →</button>`;
+  go('landing');
 }
 
-// ═══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 //  DASHBOARD
-// ═══════════════════════════════════════════════════
-function renderDashboard() {
-  if (!state.user) { navigate('auth'); return; }
-
-  document.getElementById('dash-username').textContent = state.user.username;
-  document.getElementById('dash-coins').textContent    = state.user.coins;
-
-  const setupCount  = state.setups.length;
-  const scriptCount = state.setups.reduce((a, s) => a + (s.scripts || 0), 0);
-  const activeCount = state.setups.filter(s => s.status === 'active').length;
-
-  document.getElementById('stat-setups').textContent      = setupCount;
-  document.getElementById('stat-setups-max').textContent  = state.user.setupSlots || setupCount;
-  document.getElementById('stat-scripts').textContent     = scriptCount;
-  document.getElementById('stat-scripts-max').textContent = state.user.scriptSlots || 0;
-  document.getElementById('stat-active').textContent      = activeCount;
-  document.getElementById('stat-coins').textContent       = state.user.coins;
+// ══════════════════════════════════════════════════
+function renderDash() {
+  if (!S.user) { go('auth'); return; }
+  const u = S.user;
+  document.getElementById('d-name').textContent = u.username;
+  document.getElementById('d-admin-badge').innerHTML = u.is_admin ? '<span class="badge badge-admin">ADMIN</span>' : '';
+  const coinDisp = u.is_admin ? '∞' : u.coins;
+  document.getElementById('d-coin').innerHTML = '🪙 ' + coinDisp;
+  document.getElementById('ds-setups').textContent  = S.setups.length;
+  document.getElementById('ds-scripts').textContent = S.setups.reduce((a,s)=>a+(s.script_count||0),0);
+  document.getElementById('ds-running').textContent = S.setups.filter(s=>s.status==='active').length;
+  document.getElementById('ds-coins').textContent   = coinDisp;
 
   const list = document.getElementById('setups-list');
-
-  if (state.setups.length === 0) {
-    list.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📦</div>
-        <div class="empty-title">Aucun setup</div>
-        <div class="empty-sub">Créez votre premier setup pour commencer à héberger vos scripts.<br>Coût : <strong style="color:var(--amber)">10 Ewcoins</strong></div>
-        <button class="btn btn-primary" onclick="openCreateSetup()">+ Créer mon premier Setup</button>
-      </div>`;
+  if (!S.setups.length) {
+    list.innerHTML = `<div class="empty">
+      <div class="empty-icon">📦</div>
+      <div class="empty-t">Aucun setup</div>
+      <div class="empty-s">Créez votre premier setup pour héberger vos scripts.</div>
+      <button class="btn btn-primary btn-sm" onclick="openNewSetup()">+ Nouveau Setup</button>
+    </div>`;
     return;
   }
-
-  list.innerHTML = state.setups.map(s => `
+  list.innerHTML = S.setups.map(s=>`
     <div class="setup-card" onclick="openSetup('${s.id}')">
-      <div class="setup-card-left">
-        <div class="setup-icon">${s.emoji || '📦'}</div>
+      <div class="setup-card-l">
+        <div class="setup-emoji">${s.emoji||'📦'}</div>
         <div>
-          <div class="setup-name">${escHtml(s.name)}</div>
-          <div class="setup-meta">${s.scripts || 0} script(s) · créé le ${s.createdAt || '—'}</div>
+          <div class="setup-name">${esc(s.name)}</div>
+          <div class="setup-meta">${s.script_count||0} script(s) · ${s.createdAt||'—'}</div>
         </div>
       </div>
-      <div class="setup-card-right">
-        <span class="badge ${s.status === 'active' ? 'badge-green' : 'badge-amber'}">${s.status === 'active' ? '● actif' : '⏸ inactif'}</span>
+      <div class="setup-card-r">
+        <span class="badge ${s.status==='active'?'badge-green':'badge-gray'}">
+          <span class="dot ${s.status==='active'?'dot-green':'dot-gray'}"></span>
+          ${s.status==='active'?'actif':'inactif'}
+        </span>
         <span class="setup-arrow">→</span>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
-// ═══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 //  SETUP DETAIL
-// ═══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 function openSetup(id) {
-  state.currentSetup = state.setups.find(s => s.id === id) || null;
-  navigate('setup');
+  S.setup = S.setups.find(s=>s.id===id) || null;
+  go('setup');
 }
 
-function renderSetupDetail() {
-  const s = state.currentSetup;
-  if (!s) { navigate('dashboard'); return; }
+async function renderSetup() {
+  const s = S.setup;
+  if (!s) { go('dashboard'); return; }
+  document.getElementById('sd-name').textContent  = s.name;
+  document.getElementById('sd-title').textContent = (s.emoji||'📦') + '  ' + s.name;
+  document.getElementById('sd-meta').textContent  = s.desc || 'Aucune description';
+  document.getElementById('sd-coin').innerHTML    = '🪙 ' + (S.user?.is_admin ? '∞' : S.user?.coins||0);
 
-  document.getElementById('setup-detail-name').textContent  = s.name;
-  document.getElementById('setup-detail-title').textContent = (s.emoji || '📦') + '  ' + s.name;
-  document.getElementById('setup-detail-meta').textContent  = s.desc || 'Aucune description';
-  document.getElementById('setup-url-text').textContent     = `https://run.ewhost.io/s/${s.id}`;
-  document.getElementById('setup-coins').textContent        = state.user?.coins || 0;
-
-  // Demo scripts
-  if (!s.scriptList) {
-    s.scriptList = s.id === 's1' ? [
-      { id: 'sc1', name: 'bot_main.py',     lang: 'python',     status: 'running',  updatedAt: '2025-05-01' },
-      { id: 'sc2', name: 'utils.js',        lang: 'javascript', status: 'stopped',  updatedAt: '2025-04-28' },
-    ] : [
-      { id: 'sc3', name: 'scraper.py',      lang: 'python',     status: 'running',  updatedAt: '2025-04-30' },
-    ];
+  // Load scripts from API (or demo)
+  let scripts = s.scriptList || [];
+  if (!s.scriptList && s.id !== 'demo' && S.token !== 'demo') {
+    try {
+      const d = await api('GET', `/api/setups/${s.id}/scripts`);
+      scripts = d.scripts || [];
+      s.scriptList = scripts;
+    } catch(e) { scripts = []; }
+  } else if (S.token === 'demo' && !s.scriptList) {
+    scripts = [{id:'sc1',name:'bot_main.py',lang:'python',status:'running',updatedAt:'2025-05-01',code:'print("Hello EwHost!")'}];
+    s.scriptList = scripts;
   }
 
+  renderScripts(scripts);
+}
+
+function renderScripts(scripts) {
   const list = document.getElementById('scripts-list');
-  if (s.scriptList.length === 0) {
-    list.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📄</div>
-        <div class="empty-title">Aucun script</div>
-        <div class="empty-sub">Ajoutez un script à ce setup.<br>Coût : <strong style="color:var(--amber)">1 Ewcoin</strong></div>
-        <button class="btn btn-primary" onclick="openAddScript()">+ Ajouter un script</button>
-      </div>`;
+  if (!scripts.length) {
+    list.innerHTML = `<div class="empty">
+      <div class="empty-icon">📄</div>
+      <div class="empty-t">Aucun script</div>
+      <div class="empty-s">Ajoutez votre premier script à ce setup.</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddScript()">+ Ajouter un script</button>
+    </div>`;
+    return;
+  }
+  list.innerHTML = scripts.map(sc=>`
+    <div>
+      <div class="script-row">
+        <div class="script-row-l">
+          <span class="lang-tag lt-${sc.lang==='javascript'?'js':sc.lang==='typescript'?'ts':sc.lang==='python'?'py':'sh'}">${sc.lang.toUpperCase().slice(0,2)}</span>
+          <div>
+            <div class="script-name">${esc(sc.name)}</div>
+            <div class="script-meta">Modifié ${sc.updatedAt||'—'}</div>
+          </div>
+        </div>
+        <div class="script-row-r">
+          <span class="badge ${sc.status==='running'?'badge-green':sc.status==='error'?'badge-red':'badge-gray'}">
+            <span class="dot ${sc.status==='running'?'dot-green':sc.status==='error'?'dot-red':'dot-gray'}"></span>
+            ${sc.status||'stopped'}
+          </span>
+          <button class="btn btn-sm btn-secondary" onclick="editScript('${sc.id}')">✏ Modifier</button>
+          <button class="btn btn-sm btn-primary" onclick="runScript('${sc.id}','${sc.name}')">▶ Run</button>
+          <button class="btn btn-sm btn-danger" onclick="stopScript('${sc.id}')">⏹</button>
+          <button class="btn btn-sm btn-ghost" onclick="toggleOutput('${sc.id}')">📋 Logs</button>
+        </div>
+      </div>
+      <div class="output" id="out-${sc.id}"></div>
+    </div>`).join('');
+}
+
+async function runScript(id, name) {
+  const out = document.getElementById('out-' + id);
+  out.classList.add('on');
+  out.innerHTML = `<div class="o-inf">[${now()}] Démarrage sur Fly.io...</div>`;
+
+  if (S.token === 'demo') {
+    const lines = [
+      ['o-inf','Container Docker démarré'],
+      ['o-inf','Dépendances installées'],
+      ['o-out','Hello EwHost!'],
+      ['o-out','Script en cours d\'exécution...'],
+      ['o-ok', '✓ ' + name + ' — OK (0.42s)'],
+    ];
+    let i = 0;
+    const t = setInterval(() => {
+      if (i >= lines.length) { clearInterval(t); return; }
+      const [cls,txt] = lines[i++];
+      out.innerHTML += `<div class="${cls}">[${now()}] ${esc(txt)}</div>`;
+      out.scrollTop = out.scrollHeight;
+    }, 350);
     return;
   }
 
-  list.innerHTML = s.scriptList.map(sc => `
-    <div>
-      <div class="script-row">
-        <div class="script-row-left">
-          <span class="script-lang-badge lang-${sc.lang}">${langLabel(sc.lang)}</span>
-          <div>
-            <div class="script-name">${escHtml(sc.name)}</div>
-            <div class="script-meta">mis à jour ${sc.updatedAt}</div>
-          </div>
-        </div>
-        <div class="script-row-right">
-          <span class="badge ${sc.status === 'running' ? 'badge-green' : 'badge-amber'}">${sc.status === 'running' ? '● running' : '⏸ stopped'}</span>
-          <button class="btn btn-sm btn-secondary" onclick="runScript('${sc.id}', '${sc.name}')">▶ Run</button>
-          <button class="btn btn-sm btn-danger" onclick="stopScript('${sc.id}')">⏹</button>
-        </div>
-      </div>
-      <div class="run-output" id="output-${sc.id}"></div>
-    </div>
-  `).join('');
-}
-
-function runScript(id, name) {
-  const out = document.getElementById('output-' + id);
-  out.classList.add('visible');
-  out.innerHTML = `<div class="out-line-info">[${new Date().toLocaleTimeString()}] Démarrage du sandbox Docker...</div>`;
-
-  // Simulation d'output en temps réel (en prod, remplacer par SSE/WebSocket vers le Worker)
-  const lines = [
-    ['info',   'Pulling image python:3.11-slim...'],
-    ['info',   'Container démarré (id: 3f8a2c...)'],
-    ['info',   'Installation dépendances...'],
-    ['stdout', 'Hello EwHost!'],
-    ['stdout', 'Script en cours d\'exécution...'],
-    ['ok',     `✓ ${name} — exécution terminée (0.34s)`],
-  ];
-  let i = 0;
-  const tick = setInterval(() => {
-    if (i >= lines.length) { clearInterval(tick); return; }
-    const [type, text] = lines[i++];
-    const cls = type === 'stdout' ? 'out-line-stdout' : type === 'ok' ? 'out-line-ok' : 'out-line-info';
-    out.innerHTML += `<div class="${cls}" style="${type==='ok'?'color:var(--green)':''}">[${new Date().toLocaleTimeString()}] ${escHtml(text)}</div>`;
+  try {
+    const d = await api('POST', `/api/scripts/${id}/run`);
+    const lines = (d.output || '').split('\n');
+    out.innerHTML = '';
+    lines.forEach(l => {
+      const cls = l.startsWith('[ERR') ? 'o-err' : l.startsWith('[INFO') ? 'o-inf' : 'o-out';
+      out.innerHTML += `<div class="${cls}">[${now()}] ${esc(l)}</div>`;
+    });
     out.scrollTop = out.scrollHeight;
-  }, 320);
-}
 
-function stopScript(id) {
-  showToast('Script arrêté', 'warning');
-}
-
-function copySetupUrl() {
-  const url = document.getElementById('setup-url-text').textContent;
-  navigator.clipboard.writeText(url).then(() => showToast('URL copiée !', 'success'));
-}
-
-// ═══════════════════════════════════════════════════
-//  STORE
-// ═══════════════════════════════════════════════════
-function renderStore() {
-  if (state.user) {
-    document.getElementById('store-coins').textContent = state.user.coins;
+    // Update status
+    if (S.setup?.scriptList) {
+      const sc = S.setup.scriptList.find(s=>s.id===id);
+      if (sc) sc.status = d.error ? 'error' : 'running';
+      renderScripts(S.setup.scriptList);
+    }
+  } catch(e) {
+    out.innerHTML += `<div class="o-err">[${now()}] Erreur : ${esc(e.message)}</div>`;
   }
 }
 
-function selectPack(el, packId, coins, price) {
-  document.querySelectorAll('.pack-card').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  state.selectedPack = { id: packId, coins, price };
-
-  const names = { starter: 'Pack Starter', growth: 'Pack Growth', bundle: 'Pack Bundle' };
-  document.getElementById('order-desc').textContent  = names[packId];
-  document.getElementById('order-coins').textContent = coins + ' 🪙';
-  document.getElementById('order-price').textContent = price.toFixed(2) + ' €';
-  document.getElementById('payment-section').style.display = 'block';
-  document.getElementById('payment-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+async function stopScript(id) {
+  if (S.token === 'demo') { toast('warn','Script arrêté (démo)'); return; }
+  try {
+    await api('POST', `/api/scripts/${id}/stop`);
+    if (S.setup?.scriptList) {
+      const sc = S.setup.scriptList.find(s=>s.id===id);
+      if (sc) sc.status = 'stopped';
+      renderScripts(S.setup.scriptList);
+    }
+    toast('ok','Script arrêté');
+  } catch(e) { toast('err', e.message); }
 }
 
-function selectPayment(method) {
-  state.selectedPayment = method;
-  document.getElementById('pm-stripe').classList.toggle('selected', method === 'stripe');
-  document.getElementById('pm-paypal').classList.toggle('selected', method === 'paypal');
+function toggleOutput(id) {
+  const el = document.getElementById('out-' + id);
+  el.classList.toggle('on');
+}
+
+// ══════════════════════════════════════════════════
+//  SETUP CRUD
+// ══════════════════════════════════════════════════
+function openNewSetup() {
+  if (!S.user) { go('auth'); return; }
+  const price = 10; // could come from admin config
+  if (!S.user.is_admin && S.user.coins < price) {
+    toast('err','Pas assez d\'Ewcoins — achetez un pack'); go('store'); return;
+  }
+  document.getElementById('m-setup-price').textContent = price + ' Ewcoins';
+  document.getElementById('m-setup-bal').textContent   = S.user.is_admin ? '∞' : S.user.coins;
+  openM('m-setup');
+}
+
+async function createSetup() {
+  const name  = document.getElementById('ns-name').value.trim();
+  const desc  = document.getElementById('ns-desc').value.trim();
+  const emoji = document.getElementById('ns-emoji').value.trim() || '📦';
+  if (!name) { toast('err','Donnez un nom'); return; }
+  try {
+    let s;
+    if (S.token === 'demo') {
+      s = {id:'s'+Date.now(),name,desc,emoji,script_count:0,status:'active',createdAt:new Date().toLocaleDateString(),scriptList:[]};
+    } else {
+      s = await api('POST','/api/setups',{name,desc,emoji});
+    }
+    if (!S.user.is_admin) S.user.coins -= 10;
+    S.setups.unshift(s);
+    closeM('m-setup');
+    renderDash();
+    toast('ok','Setup créé !');
+    ['ns-name','ns-desc','ns-emoji'].forEach(id=>document.getElementById(id).value='');
+  } catch(e) { toast('err',e.message); }
+}
+
+function openSetupSettings() {
+  const s = S.setup;
+  if (!s) return;
+  document.getElementById('ss-name').value  = s.name;
+  document.getElementById('ss-desc').value  = s.desc || '';
+  document.getElementById('ss-emoji').value = s.emoji || '';
+  openM('m-setup-settings');
+}
+
+async function saveSetupSettings() {
+  const s = S.setup;
+  if (!s) return;
+  const name  = document.getElementById('ss-name').value.trim();
+  const desc  = document.getElementById('ss-desc').value.trim();
+  const emoji = document.getElementById('ss-emoji').value.trim();
+  try {
+    if (S.token !== 'demo') await api('PUT', `/api/setups/${s.id}`, {name,desc,emoji});
+    s.name = name; s.desc = desc; s.emoji = emoji;
+    const idx = S.setups.findIndex(x=>x.id===s.id);
+    if (idx >= 0) S.setups[idx] = {...S.setups[idx], name, desc, emoji};
+    closeM('m-setup-settings');
+    renderSetup();
+    toast('ok','Setup mis à jour');
+  } catch(e) { toast('err',e.message); }
+}
+
+async function deleteSetup() {
+  if (!S.setup) return;
+  if (!confirm('Supprimer ce setup et tous ses scripts ?')) return;
+  try {
+    if (S.token !== 'demo') await api('DELETE', `/api/setups/${S.setup.id}`);
+    S.setups = S.setups.filter(x=>x.id!==S.setup.id);
+    closeM('m-setup-settings');
+    go('dashboard');
+    toast('ok','Setup supprimé');
+  } catch(e) { toast('err',e.message); }
+}
+
+// ══════════════════════════════════════════════════
+//  SCRIPT CRUD
+// ══════════════════════════════════════════════════
+function openAddScript() {
+  if (!S.user) return;
+  if (!S.user.is_admin && S.user.coins < 1) {
+    toast('err','Pas assez d\'Ewcoins'); go('store'); return;
+  }
+  S.editScript = null;
+  document.getElementById('m-script-ttl').textContent = 'Nouveau script';
+  document.getElementById('m-script-cost-bar').style.display = '';
+  document.getElementById('m-script-btn').textContent = 'Déployer →';
+  document.getElementById('m-script-bal').textContent = S.user.is_admin ? '∞' : S.user.coins;
+  ['sc-name','sc-code','sc-env'].forEach(id=>document.getElementById(id).value='');
+  openM('m-script');
+}
+
+function editScript(id) {
+  const sc = S.setup?.scriptList?.find(s=>s.id===id);
+  if (!sc) return;
+  S.editScript = id;
+  document.getElementById('m-script-ttl').textContent = 'Modifier ' + sc.name;
+  document.getElementById('m-script-cost-bar').style.display = 'none';
+  document.getElementById('m-script-btn').textContent = 'Sauvegarder →';
+  document.getElementById('sc-name').value = sc.name || '';
+  document.getElementById('sc-code').value = sc.code || '';
+  document.getElementById('sc-env').value  = sc.env_vars || '';
+  // Set lang
+  selLangById(sc.lang || 'python');
+  openM('m-script');
+}
+
+function selLang(el, lang) {
+  document.querySelectorAll('.lang-btn').forEach(b=>{b.classList.remove('on');b.style.background='';b.style.color='';b.style.borderColor=''});
+  el.classList.add('on');
+  el.style.background = 'var(--green)';
+  el.style.color = '#000';
+  el.style.borderColor = 'var(--green)';
+  S.lang = lang;
+  document.getElementById('ed-lang').textContent = lang;
+}
+
+function selLangById(lang) {
+  const btn = document.querySelector(`.lang-btn[data-lang="${lang}"]`);
+  if (btn) selLang(btn, lang);
+}
+
+async function saveScript() {
+  const name = document.getElementById('sc-name').value.trim();
+  const code = document.getElementById('sc-code').value;
+  const env  = document.getElementById('sc-env').value;
+  if (!name) { toast('err','Donnez un nom'); return; }
+  if (!code)  { toast('err','Le code est vide'); return; }
+
+  const s = S.setup;
+  if (!s) return;
+
+  try {
+    if (S.editScript) {
+      // Edit existing
+      let sc;
+      if (S.token === 'demo') {
+        sc = S.setup.scriptList.find(x=>x.id===S.editScript);
+        if (sc) { sc.name=name; sc.code=code; sc.env_vars=env; sc.updatedAt=new Date().toLocaleDateString(); }
+      } else {
+        sc = await api('PUT', `/api/scripts/${S.editScript}`, {name,code,env_vars:env,lang:S.lang});
+        const idx = S.setup.scriptList.findIndex(x=>x.id===S.editScript);
+        if (idx>=0) S.setup.scriptList[idx] = {...S.setup.scriptList[idx],...sc};
+      }
+      toast('ok','Script mis à jour');
+    } else {
+      // New
+      let sc;
+      if (S.token === 'demo') {
+        sc = {id:'sc'+Date.now(),name,lang:S.lang,code,env_vars:env,status:'stopped',updatedAt:new Date().toLocaleDateString()};
+      } else {
+        sc = await api('POST', `/api/setups/${s.id}/scripts`, {name,lang:S.lang,code,envVars:env});
+      }
+      if (!S.user.is_admin) S.user.coins -= 1;
+      if (!s.scriptList) s.scriptList = [];
+      s.scriptList.push(sc);
+      s.script_count = s.scriptList.length;
+      const idx = S.setups.findIndex(x=>x.id===s.id);
+      if (idx>=0) S.setups[idx].script_count = s.script_count;
+      toast('ok','Script déployé !');
+    }
+    closeM('m-script');
+    renderSetup();
+  } catch(e) { toast('err',e.message); }
+}
+
+async function deleteScriptById(id) {
+  if (!confirm('Supprimer ce script ?')) return;
+  try {
+    if (S.token !== 'demo') await api('DELETE', `/api/scripts/${id}`);
+    if (S.setup?.scriptList) {
+      S.setup.scriptList = S.setup.scriptList.filter(x=>x.id!==id);
+      S.setup.script_count = S.setup.scriptList.length;
+    }
+    renderSetup();
+    toast('ok','Script supprimé');
+  } catch(e) { toast('err',e.message); }
+}
+
+// ══════════════════════════════════════════════════
+//  STORE
+// ══════════════════════════════════════════════════
+function renderStore() {
+  if (S.user) {
+    document.getElementById('store-coin').innerHTML = '🪙 ' + (S.user.is_admin ? '∞' : S.user.coins);
+  }
+}
+
+function selPack(el, id, coins, price) {
+  document.querySelectorAll('.pack').forEach(p=>p.classList.remove('sel'));
+  el.classList.add('sel');
+  S.pack = {id,coins,price};
+  const names = {starter:'Pack Starter',growth:'Pack Growth',bundle:'Pack Bundle'};
+  document.getElementById('pay-desc').textContent  = names[id];
+  document.getElementById('pay-coins').textContent = coins + ' 🪙';
+  document.getElementById('pay-price').textContent = price.toFixed(2) + ' €';
+  document.getElementById('pay-section').style.display = 'block';
+  document.getElementById('pay-section').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function selPay(m) {
+  S.payment = m;
+  document.getElementById('pm-stripe').classList.toggle('sel', m==='stripe');
+  document.getElementById('pm-paypal').classList.toggle('sel', m==='paypal');
 }
 
 async function checkout() {
-  if (!state.user) { navigate('auth'); showToast('Connectez-vous d\'abord', 'warning'); return; }
-  if (!state.selectedPack) { showToast('Sélectionnez un pack', 'error'); return; }
-
-  setLoading('checkout-btn', 'checkout-spinner', true);
-
+  if (!S.user) { go('auth'); toast('warn','Connectez-vous d\'abord'); return; }
+  if (!S.pack) { toast('err','Sélectionnez un pack'); return; }
+  loading('pay-btn','pay-spin',true);
   try {
-    if (state.user.id === 'demo') {
-      // Démo : simuler l'achat
-      await sleep(1200);
-      state.user.coins += state.selectedPack.coins;
-      document.getElementById('store-coins').textContent = state.user.coins;
-      document.getElementById('nav-coins') && (document.getElementById('nav-coins').textContent = state.user.coins);
-      recordPurchase(state.selectedPack);
-      showToast(`+${state.selectedPack.coins} 🪙 ajoutés (démo) !`, 'success');
+    if (S.user.id === 'demo') {
+      await sleep(1000);
+      S.user.coins += S.pack.coins;
+      renderStore();
+      updateNavCoins();
+      addPurchaseHistory(S.pack);
+      toast('ok','+'+S.pack.coins+' 🪙 ajoutés (démo)');
       return;
     }
-
-    if (state.selectedPayment === 'stripe') {
-      // Appel Worker → Stripe Checkout Session
-      const data = await api('POST', '/api/store/checkout', {
-        pack:      state.selectedPack.id,
-        priceId:   CONFIG.STRIPE_PRICES[state.selectedPack.id],
-        returnUrl: window.location.origin + '?payment=success',
-        cancelUrl: window.location.origin + '?payment=cancel',
+    if (S.payment === 'stripe') {
+      const d = await api('POST','/api/store/checkout',{
+        pack:      S.pack.id,
+        priceId:   CFG.PRICES[S.pack.id],
+        returnUrl: window.location.origin + window.location.pathname + '?payment=success',
+        cancelUrl: window.location.origin + window.location.pathname + '?payment=cancel',
       });
-      // Redirige vers Stripe Checkout (hébergé par Stripe, PCI compliant)
-      window.location.href = data.checkoutUrl;
+      window.location.href = d.checkoutUrl;
     } else {
-      // PayPal — le Worker renvoie l'URL de paiement PayPal
-      const data = await api('POST', '/api/store/paypal', {
-        pack: state.selectedPack.id,
-        returnUrl: window.location.origin + '?payment=success',
-        cancelUrl: window.location.origin + '?payment=cancel',
+      const d = await api('POST','/api/store/paypal',{
+        pack:      S.pack.id,
+        returnUrl: window.location.origin + window.location.pathname + '?payment=success',
+        cancelUrl: window.location.origin + window.location.pathname + '?payment=cancel',
       });
-      window.location.href = data.approvalUrl;
+      window.location.href = d.approvalUrl;
     }
-  } catch (e) {
-    showToast('Erreur paiement : ' + e.message, 'error');
-  } finally {
-    setLoading('checkout-btn', 'checkout-spinner', false);
-  }
+  } catch(e) { toast('err','Erreur paiement : ' + e.message); }
+  finally { loading('pay-btn','pay-spin',false); }
 }
 
-function recordPurchase(pack) {
-  const hist = document.getElementById('purchase-history');
-  const row = document.createElement('div');
-  row.className = 'script-row';
-  row.style.marginBottom = '8px';
-  row.innerHTML = `
-    <div class="script-row-left">
+function updateNavCoins() {
+  const el = document.getElementById('nav-coins');
+  if (el) el.textContent = S.user.is_admin ? '∞' : S.user.coins;
+}
+
+function addPurchaseHistory(pack) {
+  const h = document.getElementById('purchase-hist');
+  const row = `<div class="script-row" style="margin-bottom:6px">
+    <div class="script-row-l">
       <span class="badge badge-green">✓ réussi</span>
       <div>
         <div class="script-name">Pack ${pack.id} — ${pack.coins} 🪙</div>
         <div class="script-meta">${new Date().toLocaleDateString()} — ${pack.price.toFixed(2)} €</div>
       </div>
-    </div>`;
-  hist.innerHTML = '';
-  hist.appendChild(row);
+    </div>
+  </div>`;
+  h.innerHTML = row + h.innerHTML;
 }
 
-// ═══════════════════════════════════════════════════
-//  SETUP CREATION
-// ═══════════════════════════════════════════════════
-function openCreateSetup() {
-  if (!state.user) { navigate('auth'); return; }
-  if (state.user.coins < 10) {
-    showToast('Pas assez de 🪙 — il faut 10 Ewcoins', 'error');
-    navigate('store');
-    return;
-  }
-  document.getElementById('modal-coins-display').textContent = state.user.coins;
-  openModal('modal-create-setup');
-}
-
-async function createSetup() {
-  const name  = document.getElementById('new-setup-name').value.trim();
-  const desc  = document.getElementById('new-setup-desc').value.trim();
-  const emoji = document.getElementById('new-setup-emoji').value.trim() || '📦';
-
-  if (!name) { showToast('Donnez un nom au setup', 'error'); return; }
-
+// ══════════════════════════════════════════════════
+//  ADMIN
+// ══════════════════════════════════════════════════
+async function renderAdmin() {
+  if (!S.user?.is_admin) { go('dashboard'); return; }
   try {
-    let setup;
-    if (state.user.id === 'demo') {
-      setup = { id: 'demo_' + Date.now(), name, desc, emoji, scripts: 0, maxScripts: 1, createdAt: new Date().toLocaleDateString(), status: 'active', scriptList: [] };
-    } else {
-      setup = await api('POST', '/api/setups', { name, desc, emoji });
+    if (S.token === 'demo') {
+      document.getElementById('admin-users').innerHTML = `
+        <div class="user-row">
+          <div><div style="font-size:12px;font-weight:600">demo@ewhost.io</div><div style="font-size:11px;color:var(--text2)">Demo</div></div>
+          <div class="flex-c gap8"><span class="coin" style="font-size:11px">50 🪙</span><span class="badge badge-gray">user</span></div>
+        </div>`;
+      return;
     }
-    state.user.coins -= 10;
-    state.setups.unshift(setup);
-    closeModal('modal-create-setup');
-    renderDashboard();
-    showToast('Setup "' + name + '" créé ! (-10 🪙)', 'success');
-    document.getElementById('new-setup-name').value = '';
-    document.getElementById('new-setup-desc').value = '';
-    document.getElementById('new-setup-emoji').value = '';
-  } catch (e) {
-    showToast('Erreur : ' + e.message, 'error');
-  }
+    const d = await api('GET','/api/admin/users');
+    document.getElementById('admin-users').innerHTML = (d.users||[]).map(u=>`
+      <div class="user-row">
+        <div>
+          <div style="font-size:12px;font-weight:600">${esc(u.email)}</div>
+          <div style="font-size:11px;color:var(--text2)">${esc(u.username)}</div>
+        </div>
+        <div class="flex-c gap8">
+          <span class="coin" style="font-size:11px;padding:2px 8px">${u.is_admin?'∞':u.coins} 🪙</span>
+          <span class="badge ${u.is_admin?'badge-admin':'badge-gray'}">${u.is_admin?'admin':'user'}</span>
+        </div>
+      </div>`).join('') || '<div style="font-size:12px;color:var(--text2)">Aucun utilisateur.</div>';
+  } catch(e) { toast('err',e.message); }
 }
 
-// ═══════════════════════════════════════════════════
-//  SCRIPT CREATION
-// ═══════════════════════════════════════════════════
-function openAddScript() {
-  if (!state.user) return;
-  if (state.user.coins < 1) {
-    showToast('Pas assez de 🪙 — il faut 1 Ewcoin', 'error');
-    navigate('store');
-    return;
-  }
-  document.getElementById('modal-coins-script').textContent = state.user.coins;
-  openModal('modal-add-script');
-}
-
-function selectLang(el, lang) {
-  document.querySelectorAll('.lang-btn').forEach(b => {
-    b.classList.remove('active');
-    b.style.background = '';
-    b.style.color = '';
-  });
-  el.classList.add('active');
-  el.style.background = 'var(--violet)';
-  el.style.color = '#fff';
-  state.selectedLang = lang;
-}
-
-async function addScript() {
-  const name = document.getElementById('new-script-name').value.trim();
-  const code = document.getElementById('new-script-code').value;
-  const env  = document.getElementById('new-script-env').value;
-
-  if (!name) { showToast('Donnez un nom au script', 'error'); return; }
-  if (!code)  { showToast('Le code ne peut pas être vide', 'error'); return; }
-
-  const s = state.currentSetup;
-  if (!s) return;
-
+async function adminGiveCoins() {
+  const email = document.getElementById('admin-email').value.trim();
+  const coins = parseInt(document.getElementById('admin-coins').value);
+  if (!email || !coins) { toast('err','Remplissez email + montant'); return; }
   try {
-    let script;
-    if (state.user.id === 'demo') {
-      script = { id: 'sc_' + Date.now(), name, lang: state.selectedLang, status: 'stopped', updatedAt: new Date().toLocaleDateString() };
-    } else {
-      script = await api('POST', `/api/setups/${s.id}/scripts`, {
-        name, lang: state.selectedLang, code, env
-      });
-    }
-    state.user.coins -= 1;
-    if (!s.scriptList) s.scriptList = [];
-    s.scriptList.push(script);
-    s.scripts = s.scriptList.length;
-    closeModal('modal-add-script');
-    renderSetupDetail();
-    showToast('"' + name + '" déployé ! (-1 🪙)', 'success');
-    document.getElementById('new-script-name').value = '';
-    document.getElementById('new-script-code').value = '';
-    document.getElementById('new-script-env').value = '';
-  } catch (e) {
-    showToast('Erreur : ' + e.message, 'error');
-  }
+    await api('POST','/api/admin/give-coins',{email,coins});
+    toast('ok',`${coins} 🪙 crédités à ${email}`);
+    renderAdmin();
+  } catch(e) { toast('err',e.message); }
 }
 
-// ═══════════════════════════════════════════════════
+async function adminToggleAdmin() {
+  const email = document.getElementById('admin-email').value.trim();
+  if (!email) { toast('err','Entrez un email'); return; }
+  try {
+    await api('POST','/api/admin/toggle-admin',{email});
+    toast('ok','Statut admin modifié pour ' + email);
+    renderAdmin();
+  } catch(e) { toast('err',e.message); }
+}
+
+async function saveCfg(key, value) {
+  try {
+    await api('POST','/api/admin/config',{key,value});
+    toast('ok','Configuration sauvegardée');
+  } catch(e) { toast('err',e.message); }
+}
+
+async function toggleCfg(key) {
+  await saveCfg(key, document.getElementById('cfg-reg').textContent === 'ON' ? '0' : '1');
+  const btn = document.getElementById('cfg-reg');
+  btn.textContent = btn.textContent === 'ON' ? 'OFF' : 'ON';
+}
+
+// ══════════════════════════════════════════════════
 //  MODAL HELPERS
-// ═══════════════════════════════════════════════════
-function openModal(id) {
-  document.getElementById(id).classList.add('open');
-}
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
-}
-
-// Close on overlay click
-document.querySelectorAll('.modal-overlay').forEach(o => {
-  o.addEventListener('click', e => {
-    if (e.target === o) o.classList.remove('open');
-  });
+// ══════════════════════════════════════════════════
+function openM(id) { document.getElementById(id).classList.add('open'); }
+function closeM(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-bg').forEach(o => {
+  o.addEventListener('click', e => { if(e.target===o) o.classList.remove('open'); });
 });
 
-// ═══════════════════════════════════════════════════
-//  TOAST
-// ═══════════════════════════════════════════════════
-function showToast(msg, type = 'info') {
-  const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
+// ══════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════
+function toast(type, msg) {
+  const icons = {ok:'✓',err:'✕',warn:'⚠',info:'ℹ'};
   const t = document.createElement('div');
   t.className = `toast ${type}`;
-  t.innerHTML = `<span class="toast-icon">${icons[type]||'ℹ'}</span><span>${msg}</span>`;
-  const c = document.getElementById('toast-container');
-  c.appendChild(t);
-  setTimeout(() => {
-    t.style.opacity = '0';
-    t.style.transform = 'translateX(16px)';
-    t.style.transition = 'all 0.3s';
-    setTimeout(() => t.remove(), 300);
-  }, 3200);
+  t.innerHTML = `<span>${icons[type]||'ℹ'}</span><span>${msg}</span>`;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(10px)'; t.style.transition='all 0.25s'; setTimeout(()=>t.remove(),250); }, 3000);
 }
 
-// ═══════════════════════════════════════════════════
-//  UTILS
-// ═══════════════════════════════════════════════════
-function setLoading(btnId, spinnerId, loading) {
-  const btn = document.getElementById(btnId);
-  const sp  = document.getElementById(spinnerId);
-  if (!btn || !sp) return;
-  btn.disabled = loading;
-  sp.style.display = loading ? 'block' : 'none';
+function loading(btnId, spinId, on) {
+  const b = document.getElementById(btnId), s = document.getElementById(spinId);
+  if(b) b.disabled = on;
+  if(s) s.style.display = on ? 'block' : 'none';
 }
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function langLabel(lang) {
-  return { python: 'PY', javascript: 'JS', typescript: 'TS', bash: 'SH' }[lang] || lang.toUpperCase().slice(0,3);
+function now() {
+  return new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
 
-// ═══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 //  INIT
-// ═══════════════════════════════════════════════════
-(function init() {
-  // Restaurer session si token présent
-  if (state.token && state.token !== 'demo_token') {
-    api('GET', '/api/me').then(data => {
-      state.user   = data.user;
-      state.setups = data.setups || [];
-      onLogin();
-    }).catch(() => {
-      localStorage.removeItem('ewhost_token');
-      state.token = null;
-    });
+// ══════════════════════════════════════════════════
+(async function init() {
+  // Init lang selector
+  const firstLang = document.querySelector('.lang-btn');
+  if (firstLang) { firstLang.style.background='var(--green)'; firstLang.style.color='#000'; firstLang.style.borderColor='var(--green)'; }
+
+  // Payment return
+  const p = new URLSearchParams(window.location.search);
+  if (p.get('payment') === 'success') {
+    toast('ok','Paiement réussi ! Ewcoins crédités. 🎉');
+    history.replaceState({},'', window.location.pathname);
+  } else if (p.get('payment') === 'cancel') {
+    toast('warn','Paiement annulé.');
+    history.replaceState({},'', window.location.pathname);
   }
 
-  // Gérer retour après paiement Stripe
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('payment') === 'success') {
-    showToast('Paiement réussi ! Vos Ewcoins ont été crédités. 🎉', 'success');
-    history.replaceState({}, '', window.location.pathname);
-  } else if (params.get('payment') === 'cancel') {
-    showToast('Paiement annulé.', 'warning');
-    history.replaceState({}, '', window.location.pathname);
+  // Restore session
+  if (S.token && S.token !== 'demo') {
+    try {
+      const d = await api('GET','/api/me');
+      S.user   = d.user;
+      S.setups = d.setups || [];
+      afterLogin();
+    } catch(e) {
+      localStorage.removeItem('ewh_tok');
+      S.token = null;
+    }
   }
-
-  // Lang selector init
-  document.querySelector('.lang-btn.active').style.background = 'var(--violet)';
-  document.querySelector('.lang-btn.active').style.color = '#fff';
 })();
 </script>
 </body>
