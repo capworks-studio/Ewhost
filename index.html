@@ -1004,7 +1004,7 @@ function renderScripts(scripts) {
           </div>
         </div>
         <div class="script-row-r">
-          <span class="badge ${sc.status==='running'?'badge-green':sc.status==='error'?'badge-red':'badge-gray'}">
+          <span class="badge ${sc.status==='running'?'badge-green':sc.status==='error'?'badge-red':'badge-gray'}" id="badge-${sc.id}">
             <span class="dot ${sc.status==='running'?'dot-green':sc.status==='error'?'dot-red':'dot-gray'}"></span>
             ${sc.status||'stopped'}
           </span>
