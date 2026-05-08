@@ -1009,8 +1009,10 @@ function renderScripts(scripts) {
             ${sc.status||'stopped'}
           </span>
           <button class="btn btn-sm btn-secondary" onclick="editScript('${sc.id}')">✏ Modifier</button>
-          <button class="btn btn-sm btn-primary" onclick="runScript('${sc.id}','${sc.name}')">▶ Run</button>
-          <button class="btn btn-sm btn-danger" onclick="stopScript('${sc.id}')">⏹</button>
+          ${sc.status === 'running' || sc.status === 'deploying'
+            ? `<button class="btn btn-sm btn-danger" onclick="stopScript('${sc.id}')">⏹ Stop</button>`
+            : `<button class="btn btn-sm btn-primary" onclick="runScript('${sc.id}','${sc.name}')">▶ Run</button>`
+          }
           <button class="btn btn-sm btn-ghost" onclick="toggleOutput('${sc.id}')">📋 Logs</button>
         </div>
       </div>
