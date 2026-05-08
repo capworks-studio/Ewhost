@@ -1021,14 +1021,14 @@ function renderScripts(scripts) {
 async function runScript(id, name) {
   const out = document.getElementById('out-' + id);
   out.classList.add('on');
-  out.innerHTML = `<div class="o-inf">[${now()}] Démarrage sur Fly.io...</div>`;
+  out.innerHTML = `<div class="o-inf">[${now()}] Demarrage sur Fly.io...</div>`;
 
   if (S.token === 'demo') {
     const lines = [
-      ['o-inf','Container Docker démarré'],
-      ['o-inf','Dépendances installées'],
+      ['o-inf','Container Docker demarre'],
+      ['o-inf','Dependances installees'],
       ['o-out','Hello EwHost!'],
-      ['o-out','Script en cours d\'exécution...'],
+      ['o-out','Script en cours d\'execution...'],
       ['o-ok', '✓ ' + name + ' — OK (0.42s)'],
     ];
     let i = 0;
@@ -1043,20 +1043,41 @@ async function runScript(id, name) {
 
   try {
     const d = await api('POST', `/api/scripts/${id}/run`);
+
+    // Afficher l'output sans effacer
     const lines = (d.output || '').split('\n');
-    out.innerHTML = '';
     lines.forEach(l => {
-      const cls = l.startsWith('[ERR') ? 'o-err' : l.startsWith('[INFO') ? 'o-inf' : 'o-out';
+      const cls = l.startsWith('[ERR') ? 'o-err' : l.startsWith('[EwHost]') ? 'o-inf' : 'o-out';
       out.innerHTML += `<div class="${cls}">[${now()}] ${esc(l)}</div>`;
     });
     out.scrollTop = out.scrollHeight;
 
-    // Update status
-    if (S.setup?.scriptList) {
-      const sc = S.setup.scriptList.find(s=>s.id===id);
-      if (sc) sc.status = d.error ? 'error' : 'running';
-      renderScripts(S.setup.scriptList);
+    // Mettre a jour le badge de statut SANS recharger toute la liste
+    const badge = document.querySelector(`#badge-${id}`);
+    if (badge) {
+      badge.className = 'badge badge-amber';
+      badge.innerHTML = '<span class="dot dot-amber"></span> deploying';
     }
+
+    // Verifier le statut apres 60s
+    setTimeout(async () => {
+      try {
+        const scripts = await api('GET', `/api/setups/${S.setup.id}/scripts`);
+        const sc = scripts.scripts?.find(x => x.id === id);
+        if (sc && S.setup?.scriptList) {
+          const idx = S.setup.scriptList.findIndex(x => x.id === id);
+          if (idx >= 0) S.setup.scriptList[idx].status = sc.status;
+          const b = document.querySelector(`#badge-${id}`);
+          if (b) {
+            const isRun = sc.status === 'running';
+            b.className = `badge ${isRun ? 'badge-green' : sc.status === 'error' ? 'badge-red' : 'badge-gray'}`;
+            b.innerHTML = `<span class="dot ${isRun ? 'dot-green' : 'dot-gray'}"></span> ${sc.status}`;
+          }
+          out.innerHTML += `<div class="o-ok">[${now()}] Statut mis a jour : ${sc.status}</div>`;
+        }
+      } catch(_) {}
+    }, 60000);
+
   } catch(e) {
     out.innerHTML += `<div class="o-err">[${now()}] Erreur : ${esc(e.message)}</div>`;
   }
